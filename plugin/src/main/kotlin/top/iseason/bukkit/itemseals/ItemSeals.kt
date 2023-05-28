@@ -1,6 +1,7 @@
 package top.iseason.bukkit.itemseals
 
 import io.github.bananapuncher714.nbteditor.NBTEditor
+import org.bstats.bukkit.Metrics
 import org.bukkit.Material
 import org.bukkit.block.BlockState
 import org.bukkit.enchantments.Enchantment
@@ -10,8 +11,6 @@ import org.bukkit.inventory.InventoryHolder
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.BlockStateMeta
-import org.bukkit.permissions.PermissionDefault
-import sun.audio.AudioPlayer.player
 import top.iseason.bukkit.itemseals.command.commands
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkit.itemseals.config.Events
@@ -20,10 +19,8 @@ import top.iseason.bukkit.itemseals.hook.PWPHook
 import top.iseason.bukkit.itemseals.hook.PlayerDataSQLHook
 import top.iseason.bukkit.itemseals.hook.SakuraBindHook
 import top.iseason.bukkittemplate.BukkitPlugin
+import top.iseason.bukkittemplate.BukkitTemplate
 import top.iseason.bukkittemplate.command.CommandHandler
-import top.iseason.bukkittemplate.command.command
-import top.iseason.bukkittemplate.command.executor
-import top.iseason.bukkittemplate.command.node
 import top.iseason.bukkittemplate.config.SimpleYAMLConfig
 import top.iseason.bukkittemplate.debug.debug
 import top.iseason.bukkittemplate.debug.info
@@ -55,6 +52,7 @@ object ItemSeals : BukkitPlugin {
         commands()
         CommandHandler.updateCommands()
         Listener.registerListener()
+        Metrics(BukkitTemplate.getPlugin(), 18594)
         info("&a插件已启用! 作者: Iseason")
     }
 

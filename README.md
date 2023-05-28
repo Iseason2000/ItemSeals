@@ -19,7 +19,7 @@
 
 ## 插件动图
 
-![ItemSeals](https://github.com/Iseason2000/ItemSeals/assets/65019366/89254f23-d9cb-485c-bc98-fc7202967ba1)
+![ItemSeals](https://github.com/Iseason2000/ItemSeals/assets/65019366/80988785-3bfe-48db-92dd-f7cee132dc5e)
 
 ## 插件命令
 

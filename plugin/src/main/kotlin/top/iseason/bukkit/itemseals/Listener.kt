@@ -1,6 +1,5 @@
 package top.iseason.bukkit.itemseals
 
-import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -9,17 +8,12 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.player.PlayerChangedWorldEvent
 import org.bukkit.event.player.PlayerLoginEvent
 import org.bukkit.inventory.ItemStack
-import sun.audio.AudioPlayer.player
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkit.itemseals.config.Events
 import top.iseason.bukkit.itemseals.config.Lang
-import top.iseason.bukkittemplate.debug.debug
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.checkAir
 import top.iseason.bukkittemplate.utils.bukkit.MessageUtils.sendColorMessage
 import top.iseason.bukkittemplate.utils.other.submit
-import java.time.Duration
-import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalUnit
 import java.util.concurrent.TimeUnit
 
 object Listener : org.bukkit.event.Listener {
@@ -47,8 +41,8 @@ object Listener : org.bukkit.event.Listener {
 
     private val cache = CacheBuilder
         .newBuilder()
-        .expireAfterAccess(10, TimeUnit.SECONDS)
-        .build<ItemStack, Boolean>()
+        .expireAfterAccess(5, TimeUnit.SECONDS)
+        .build<ClickCache, Boolean>()
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     fun onInvClick(event: InventoryClickEvent) {
@@ -57,7 +51,7 @@ object Listener : org.bukkit.event.Listener {
         val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked) ?: return
         val item = event.currentItem
         if (item.checkAir()) return
-        cache.get(item!!) {
+        cache.get(ClickCache(whoClicked, item!!)) {
             if (checkWorldSeal) {
                 val sealItem = ItemSeals.sealItem(item, whoClicked) ?: return@get false
                 item.type = sealItem.first.type
@@ -75,6 +69,21 @@ object Listener : org.bukkit.event.Listener {
                 event.isCancelled = true
                 return@get true
             }
+        }
+    }
+
+    private class ClickCache(val player: Player, val itemStack: ItemStack) {
+        override fun hashCode(): Int {
+            var hash = 1
+            hash = hash * 31 + player.hashCode()
+            hash = hash * 31 + itemStack.hashCode()
+            return hash
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (other === this) return true
+            if (other !is ClickCache) return false
+            return other.player == player && other.itemStack == itemStack
         }
     }
 }

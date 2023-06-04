@@ -65,7 +65,7 @@ object ItemSeals : BukkitPlugin {
      * @return 被封印之后的物品，null 不封印
      */
     fun sealItem(item: ItemStack, player: Player, force: Boolean = false): Pair<ItemStack, Int>? {
-        if (!force && !Config.materials.contains(item.type)) {
+        if (!force && !Config.isMatch(item, player)) {
             val itemMeta = item.itemMeta as? BlockStateMeta ?: return null
             val blockState = itemMeta.blockState as? InventoryHolder ?: return null
             val c = sealInv(blockState.inventory, player)

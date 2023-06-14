@@ -13,6 +13,7 @@ import top.iseason.bukkittemplate.config.SimpleYAMLConfig
 import top.iseason.bukkittemplate.config.annotations.Comment
 import top.iseason.bukkittemplate.config.annotations.FilePath
 import top.iseason.bukkittemplate.config.annotations.Key
+import top.iseason.bukkittemplate.debug.info
 import top.iseason.bukkittemplate.debug.warn
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.applyMeta
@@ -49,7 +50,7 @@ object Config : SimpleYAMLConfig() {
         "", "被封印的物品将会变成这个物品（全局）占位符 {0} 会被替换成原物品的名字",
         "格式: https://github.com/Iseason2000/BukkitTemplate/wiki/%E7%89%A9%E5%93%81%E5%BA%8F%E5%88%97%E5%8C%96",
     )
-    var sealed_item = Material.PAPER.item.applyMeta {
+    var sealed_item: MemorySection = Material.PAPER.item.applyMeta {
         setDisplayName("&6[已封印] &f{0}")
         lore = listOf("&c由于世界限制，此物品已被封印", "&c前往不限制的世界将自动解封")
     }.toSection()
@@ -168,7 +169,10 @@ object Config : SimpleYAMLConfig() {
         val fromSection = ItemUtils.fromSection(sealed_item)
         if (fromSection == null) {
             warn("无效的材质")
-        } else globalItem = fromSection
+        } else {
+            globalItem = fromSection
+            info("&a新的封印材质为 ${globalItem.type}")
+        }
         matcherItems.clear()
         matchers.clear()
         cache.cleanUp()

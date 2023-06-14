@@ -58,6 +58,7 @@ subprojects {
         // 数据库
         val exposedVersion: String by rootProject
         val nbtEditorVersion: String by rootProject
+        compileOnly("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")
         implementation("io.github.bananapuncher714:nbteditor:$nbtEditorVersion")
         compileOnly("me.clip:placeholderapi:2.11.2")
         compileOnly("org.jetbrains.exposed:exposed-core:$exposedVersion")

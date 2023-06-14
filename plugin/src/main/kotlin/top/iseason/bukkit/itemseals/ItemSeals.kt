@@ -1,8 +1,8 @@
 package top.iseason.bukkit.itemseals
 
+import cc.bukkitPlugin.banitem.api.invGettor.CCInventory
 import io.github.bananapuncher714.nbteditor.NBTEditor
 import org.bstats.bukkit.Metrics
-import org.bukkit.Material
 import org.bukkit.block.BlockState
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.Player
@@ -15,6 +15,7 @@ import top.iseason.bukkit.itemseals.command.commands
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkit.itemseals.config.Events
 import top.iseason.bukkit.itemseals.config.Lang
+import top.iseason.bukkit.itemseals.hook.BanItemHook
 import top.iseason.bukkit.itemseals.hook.PWPHook
 import top.iseason.bukkit.itemseals.hook.PlayerDataSQLHook
 import top.iseason.bukkit.itemseals.hook.SakuraBindHook
@@ -26,23 +27,25 @@ import top.iseason.bukkittemplate.debug.debug
 import top.iseason.bukkittemplate.debug.info
 import top.iseason.bukkittemplate.utils.bukkit.EventUtils.registerListener
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils
+import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.applyMeta
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.checkAir
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.getDisplayName
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.toBase64
+import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.toColorPapi
 import top.iseason.bukkittemplate.utils.bukkit.MessageUtils.formatBy
 import top.iseason.bukkittemplate.utils.bukkit.MessageUtils.sendColorMessage
-import top.iseason.bukkittemplate.utils.bukkit.MessageUtils.toColor
 import java.util.*
 import kotlin.math.min
 
 @Suppress("UNUSED")
 object ItemSeals : BukkitPlugin {
-    var pattern = ItemStack(Material.PAPER)
+
     override fun onAsyncEnable() {
         SimpleYAMLConfig.notifyMessage = "&a配置文件 &7%s &a已重载"
         PWPHook.checkHooked()
         SakuraBindHook.checkHooked()
         PlayerDataSQLHook.checkHooked()
+        BanItemHook.checkHooked()
         if (PlayerDataSQLHook.hasHooked) {
             PlayerDataSQLHook.registerListener()
         }
@@ -78,21 +81,20 @@ object ItemSeals : BukkitPlugin {
             return null
         }
         val base64 = item.toBase64()
-        val itemStack = pattern.clone()
-        val itemMeta = itemStack.itemMeta!!
-        val meta = item.itemMeta!!
-        val name = Config.seal_name.formatBy(item.getDisplayName() ?: item.type.name).toColor()
-        itemMeta.setDisplayName(name)
-        if (meta.hasLore() && Config.seal_lore_index >= 0) {
-            val lore = meta.lore!!
-            lore.addAll(min(Config.seal_lore_index, lore.size - 1), Config.seal_lore.toColor())
-            itemMeta.lore = lore
-        } else itemMeta.lore = Config.seal_lore.toColor()
-        if (Config.highlight_sealed_item) {
-            itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
-            itemMeta.addEnchant(Enchantment.DURABILITY, 1, true)
-        }
-        itemStack.itemMeta = itemMeta
+        val itemMeta = item.itemMeta!!
+        val itemStack = Config.getSealedItemPattern(item).clone().applyMeta {
+            val name = item.getDisplayName() ?: item.type.name
+            setDisplayName(displayName.formatBy(name))
+            if (itemMeta.hasLore() && Config.seal_lore_index >= 0) {
+                val lore = itemMeta.lore!!
+                lore.addAll(min(Config.seal_lore_index, lore.size - 1), this.lore!!.map { it.formatBy(name) })
+                this.lore = lore
+            }
+            if (Config.highlight_sealed_item) {
+                itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
+                itemMeta.addEnchant(Enchantment.DURABILITY, 1, true)
+            }
+        }.toColorPapi(player)
         SakuraBindHook.bind(player, itemStack, item)
         var set = NBTEditor.set(itemStack, base64, Config.seal_item_nbt)
         set = NBTEditor.set(set, UUID.randomUUID().toString(), "itemseals_unique_id")
@@ -133,7 +135,9 @@ object ItemSeals : BukkitPlugin {
             }
             val itm = sealItem(item!!, player, force) ?: continue
             count += itm.second
-            inv.setItem(i, itm.first)
+            val im = itm.first
+            debug("sealed item in ${inv.javaClass} for ${item.type}")
+            inv.setItem(i, im)
         }
         return count
     }
@@ -150,7 +154,8 @@ object ItemSeals : BukkitPlugin {
             }
             val itm = unSealItem(item!!) ?: continue
             count += itm.second
-            inv.setItem(i, itm.first)
+            var im = itm.first
+            inv.setItem(i, im)
         }
         return count
     }
@@ -181,9 +186,17 @@ object ItemSeals : BukkitPlugin {
         debug("开始检查玩家 ${player.name} 的世界: ${checkWorldSeal}")
         checkWorldSeal ?: return
         val inventory = player.inventory
-        val count = if (checkWorldSeal)
+        var count = if (checkWorldSeal)
             sealInv(inventory, player)
         else unSealInv(inventory)
+        if (BanItemHook.hasHooked) {
+            count += BanItemHook.getModInventories(player).sumOf {
+                val num = if (checkWorldSeal) sealInv(it, player)
+                else unSealInv(it)
+                if (it is CCInventory) it.onOpEnd()
+                num
+            }
+        }
         if (count != 0) {
             if (checkWorldSeal) {
                 player.sendColorMessage(Lang.seal_msg)

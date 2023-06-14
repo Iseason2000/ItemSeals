@@ -13,8 +13,7 @@ internal object DefaultConfigType : ConfigType {
         types.add(SetType)
         types.add(ListType)
         types.add(MapType)
-        types.add(EnumType)
-        types.add(EnumSetType)
+//        types.add(EnumSetType)
     }
 
     fun matchType(clazz: Class<*>): ConfigType {

@@ -1,10 +1,12 @@
 package top.iseason.bukkit.itemseals.command
 
+import cc.bukkitPlugin.banitem.api.invGettor.CCInventory
 import org.bukkit.entity.Player
 import org.bukkit.permissions.PermissionDefault
 import top.iseason.bukkit.itemseals.ItemSeals
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkit.itemseals.config.Lang
+import top.iseason.bukkit.itemseals.hook.BanItemHook
 import top.iseason.bukkittemplate.command.*
 import top.iseason.bukkittemplate.debug.SimpleLogger
 import top.iseason.bukkittemplate.utils.bukkit.EntityUtils.getHeldItem
@@ -34,7 +36,13 @@ internal fun commands() {
             param("<player>", suggestRuntime = ParamSuggestCache.playerParam)
             executor { params, sender ->
                 val player = params.next<Player>()
-                val count = ItemSeals.sealInv(player.inventory, player, true)
+                var count = ItemSeals.sealInv(player.inventory, player, true)
+                if (BanItemHook.hasHooked)
+                    count += BanItemHook.getModInventories(player).sumOf {
+                        val num = ItemSeals.sealInv(it, player, true)
+                        if (it is CCInventory) it.onOpEnd()
+                        num
+                    }
                 if (count > 0) sender.sendColorMessage("&a已封印玩家 &6${player.name} &a背包里的 &7${count} &a个物品")
                 else sender.sendColorMessage("&6玩家背包是空的")
             }
@@ -45,7 +53,13 @@ internal fun commands() {
             param("<player>", suggestRuntime = ParamSuggestCache.playerParam)
             executor { params, sender ->
                 val player = params.next<Player>()
-                val count = ItemSeals.sealInv(player.inventory, player)
+                var count = ItemSeals.sealInv(player.inventory, player)
+                if (BanItemHook.hasHooked)
+                    count += BanItemHook.getModInventories(player).sumOf {
+                        val num = ItemSeals.sealInv(it, player)
+                        if (it is CCInventory) it.onOpEnd()
+                        num
+                    }
                 if (count > 0) sender.sendColorMessage("&a已封印玩家 &6${player.name} &a背包里的 &7${count} &a个物品")
                 else sender.sendColorMessage("&6玩家背包是空的")
             }
@@ -64,13 +78,20 @@ internal fun commands() {
                 sender.sendColorMessage("已解封玩家 ${player.name} 手上的物品")
             }
         }
+
         node("unsealAll") {
             description = "解封玩家背包的所有物品"
             default = PermissionDefault.OP
             param("<player>", suggestRuntime = ParamSuggestCache.playerParam)
             executor { params, sender ->
                 val player = params.next<Player>()
-                val count = ItemSeals.unSealInv(player.inventory)
+                var count = ItemSeals.unSealInv(player.inventory)
+                if (BanItemHook.hasHooked)
+                    count += BanItemHook.getModInventories(player).sumOf {
+                        val num = ItemSeals.unSealInv(it)
+                        if (it is CCInventory) it.onOpEnd()
+                        num
+                    }
                 if (count > 0) sender.sendColorMessage("&a已解封玩家 &6${player.name} &a背包里的 &7${count} &a个物品")
                 else sender.sendColorMessage("&6没有封印的物品")
             }

@@ -13,7 +13,7 @@ import top.iseason.bukkit.itemseals.config.Events
 import top.iseason.bukkit.itemseals.config.Lang
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.checkAir
 import top.iseason.bukkittemplate.utils.bukkit.MessageUtils.sendColorMessage
-import top.iseason.bukkittemplate.utils.other.submit
+import top.iseason.bukkittemplate.utils.bukkit.SchedulerUtils.submit
 import java.util.concurrent.TimeUnit
 
 object Listener : org.bukkit.event.Listener {

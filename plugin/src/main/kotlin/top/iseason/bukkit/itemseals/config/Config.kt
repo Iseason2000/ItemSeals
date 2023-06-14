@@ -7,7 +7,6 @@ import org.bukkit.configuration.MemorySection
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import top.iseason.bukkit.itemseals.ItemSeals
 import top.iseason.bukkit.itemseals.config.matcher.BaseMatcher
 import top.iseason.bukkit.itemseals.config.matcher.MatcherManager
 import top.iseason.bukkittemplate.config.SimpleYAMLConfig
@@ -15,6 +14,10 @@ import top.iseason.bukkittemplate.config.annotations.Comment
 import top.iseason.bukkittemplate.config.annotations.FilePath
 import top.iseason.bukkittemplate.config.annotations.Key
 import top.iseason.bukkittemplate.debug.warn
+import top.iseason.bukkittemplate.utils.bukkit.ItemUtils
+import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.applyMeta
+import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.item
+import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.toSection
 import java.util.concurrent.TimeUnit
 
 
@@ -40,21 +43,18 @@ object Config : SimpleYAMLConfig() {
     @Comment("", "玩家进入服务端之后会检查所处的世界进行封印、解封操作，此处为检查的延迟, 单位tick，-1不检查")
     var login_check_delay = 40L
 
+
     @Key
     @Comment(
-        "", "被封印的物品将会变成这个材质, 注意不要与需要封印的物品一致",
-        "支持材质名:子id 例子：",
-        "paper、PAPER、DIAMOND_SWORD、PAPER:2"
+        "", "被封印的物品将会变成这个物品（全局）占位符 {0} 会被替换成原物品的名字",
+        "格式: https://github.com/Iseason2000/BukkitTemplate/wiki/%E7%89%A9%E5%93%81%E5%BA%8F%E5%88%97%E5%8C%96",
     )
-    var material = "paper"
+    var sealed_item = Material.PAPER.item.applyMeta {
+        setDisplayName("&6[已封印] &f{0}")
+        lore = listOf("&c由于世界限制，此物品已被封印", "&c前往不限制的世界将自动解封")
+    }.toSection()
 
-    @Key
-    @Comment("", "被封印的物品将会变成这个名字,{0}是原物品的自定义名字，没有会是材质名")
-    var seal_name = "&6[已封印] &f{0}"
-
-    @Key
-    @Comment("", "被封印的物品将会插入这个lore")
-    var seal_lore = listOf("&c由于世界限制，此物品已被封印", "&c前往不限制的世界将自动解封")
+    private var globalItem = ItemStack(Material.PAPER)
 
     @Key
     @Comment("", "插入lore的位置，0表示最上面，一个足够大的值(999)可以插到最后面，-1直接覆盖原lore")
@@ -101,7 +101,7 @@ object Config : SimpleYAMLConfig() {
     @Key
     @Comment(
         "",
-        "需要封印的物品材质匹配器, 格式如下",
+        "需要封印的物品材质匹配器, match 选项格式如下 ",
         "name 为 物品名字, 必须为非原版翻译名(也就是从创造物品栏拿出来的'圆石'的name为空)",
         "name-without-color 为 除去颜色代码的物品名字, 必须为非原版翻译名(也就是从创造物品栏拿出来的'圆石'的name为空)",
         "material 为 物品材质,使用正则匹配",
@@ -114,20 +114,23 @@ object Config : SimpleYAMLConfig() {
         "注：以上的 name 和 name-without-color 互斥，material、materials、ids、materialIds 互斥，",
         "注：lore、lore-without-color 及其!后缀互斥。 互斥就是只能同时存在其中一个",
         "所有条件取交集",
-        "example 是一个例子，example作为该匹配器的组名，可用于权限控制"
+        "example 是一个例子，example作为该匹配器的组名，可用于权限控制",
+        "item 是可选的，可按分组定义物品被封印之后的物品, 不配置就用上面全局的"
     )
     var item_matchers: MemorySection = YamlConfiguration().apply {
         createSection("example").apply {
-            set("name", "^这是.*的物品$")
-            set("material", "BOW|BOOKSHELF")
-            set("materials", listOf("DIAMOND_SWORD"))
-            set("materialId", listOf("SPECIAL:2"))
-            set("ids", listOf("6578", "2233:2"))
-            set("lore", listOf("绑定物品", "属于"))
-            set("nbt.tag.testnbt", ".*")
+            set("match.name", "^这是.*的物品$")
+            set("match.material", "BOW|BOOKSHELF")
+            set("match.materials", listOf("DIAMOND_SWORD"))
+            set("match.materialId", listOf("SPECIAL:2"))
+            set("match.ids", listOf("6578", "2233:2"))
+            set("match.lore", listOf("绑定物品", "属于"))
+            set("match.nbt.tag.testnbt", ".*")
+            set("item", ItemStack(Material.PAPER).toSection())
         }
     }
     private var matchers = LinkedHashMap<String, List<BaseMatcher>>()
+    private var matcherItems = LinkedHashMap<String, ItemStack>()
 
     private val cache = CacheBuilder
         .newBuilder()
@@ -144,6 +147,11 @@ object Config : SimpleYAMLConfig() {
         else key
     }
 
+    fun getSealedItemPattern(itemStack: ItemStack): ItemStack {
+        val key = getSetting(itemStack) ?: return globalItem
+        return matcherItems[key] ?: globalItem
+    }
+
     /**
      * true 是需要封印的物品
      * false 不是需要封印的物品
@@ -157,29 +165,20 @@ object Config : SimpleYAMLConfig() {
     }
 
     override fun onLoaded(section: ConfigurationSection) {
-        val split = material.split(':')
-        val mat = split[0]
-        val matchMaterial = Material.matchMaterial(mat)
-        if (matchMaterial == null) {
-            warn("无效的材质: $mat")
-            return
-        }
-        val itemStack = ItemStack(matchMaterial)
-        if (split.size > 1) {
-            val toByte = runCatching { split[1].toByte() }.getOrElse {
-                warn("无法设置子ID:${split[1]}")
-                return
-            }
-            val data = itemStack.data ?: return
-            data.data = toByte
-        }
-        ItemSeals.pattern = itemStack
+        val fromSection = ItemUtils.fromSection(sealed_item)
+        if (fromSection == null) {
+            warn("无效的材质")
+        } else globalItem = fromSection
+        matcherItems.clear()
         matchers.clear()
         cache.cleanUp()
         item_matchers.getKeys(false).forEach {
             try {
-                val parseSection = MatcherManager.parseSection(item_matchers.getConfigurationSection(it)!!)
+                val parseSection = MatcherManager
+                    .parseSection(item_matchers.getConfigurationSection("${it}.match")!!)
                 matchers[it] = parseSection
+                val itemSection = item_matchers.getConfigurationSection("${it}.item")
+                if (itemSection != null) matcherItems[it] = ItemUtils.fromSection(itemSection) ?: return
             } catch (e: Exception) {
                 warn("匹配器配置错误：$it")
             }

@@ -84,7 +84,8 @@ object ItemSeals : BukkitPlugin {
         val itemMeta = item.itemMeta!!
         val itemStack = Config.getSealedItemPattern(item).clone().applyMeta {
             val name = item.getDisplayName() ?: item.type.name
-            setDisplayName(displayName.formatBy(name))
+            if (hasDisplayName())
+                setDisplayName(displayName.formatBy(name))
             if (itemMeta.hasLore() && Config.seal_lore_index >= 0) {
                 val lore = itemMeta.lore!!
                 lore.addAll(min(Config.seal_lore_index, lore.size - 1), this.lore!!.map { it.formatBy(name) })

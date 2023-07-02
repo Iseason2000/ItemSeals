@@ -7,6 +7,7 @@ import top.iseason.bukkit.itemseals.ItemSeals
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkit.itemseals.config.Lang
 import top.iseason.bukkit.itemseals.hook.BanItemHook
+import top.iseason.bukkit.itemseals.hook.GermHook
 import top.iseason.bukkittemplate.command.*
 import top.iseason.bukkittemplate.debug.SimpleLogger
 import top.iseason.bukkittemplate.utils.bukkit.EntityUtils.getHeldItem
@@ -43,6 +44,7 @@ internal fun commands() {
                         if (it is CCInventory) it.onOpEnd()
                         num
                     }
+                if (GermHook.hasHooked) count += GermHook.checkInv(player, true).first
                 if (count > 0) sender.sendColorMessage("&a已封印玩家 &6${player.name} &a背包里的 &7${count} &a个物品")
                 else sender.sendColorMessage("&6玩家背包是空的")
             }
@@ -60,6 +62,7 @@ internal fun commands() {
                         if (it is CCInventory) it.onOpEnd()
                         num
                     }
+                if (GermHook.hasHooked) count += GermHook.checkInv(player).first
                 if (count > 0) sender.sendColorMessage("&a已封印玩家 &6${player.name} &a背包里的 &7${count} &a个物品")
                 else sender.sendColorMessage("&6玩家背包是空的")
             }
@@ -92,6 +95,7 @@ internal fun commands() {
                         if (it is CCInventory) it.onOpEnd()
                         num
                     }
+                if (GermHook.hasHooked) count += GermHook.checkInv(player, false).second
                 if (count > 0) sender.sendColorMessage("&a已解封玩家 &6${player.name} &a背包里的 &7${count} &a个物品")
                 else sender.sendColorMessage("&6没有封印的物品")
             }

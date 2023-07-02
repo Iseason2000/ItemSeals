@@ -78,6 +78,10 @@ object Config : SimpleYAMLConfig() {
     var hooks__player_worlds_pro = false
 
     @Key
+    @Comment("", "兼容萌芽槽扫描")
+    var hooks__germ = false
+
+    @Key
     @Comment("", "兼容SakuraBind，绑定被封印的物品")
     var hooks__sakura_bind = false
 
@@ -116,7 +120,9 @@ object Config : SimpleYAMLConfig() {
         "注：lore、lore-without-color 及其!后缀互斥。 互斥就是只能同时存在其中一个",
         "所有条件取交集",
         "example 是一个例子，example作为该匹配器的组名，可用于权限控制",
-        "item 是可选的，可按分组定义物品被封印之后的物品, 不配置就用上面全局的"
+        "在匹配器里可以覆盖全局设置, 支持的键如下",
+        "black-list、white-list、sealed-item、seal-lore-index、highlight-sealed-item",
+        "hooks.player-worlds-pro、hooks.sakura-bind、hooks.sakura-bind-setting、hooks.germ"
     )
     var item_matchers: MemorySection = YamlConfiguration().apply {
         createSection("example").apply {
@@ -127,11 +133,17 @@ object Config : SimpleYAMLConfig() {
             set("match.ids", listOf("6578", "2233:2"))
             set("match.lore", listOf("绑定物品", "属于"))
             set("match.nbt.tag.testnbt", ".*")
-            set("item", ItemStack(Material.PAPER).toSection())
+            set("sealed-item", ItemStack(Material.PAPER).toSection())
         }
     }
     private var matchers = LinkedHashMap<String, List<BaseMatcher>>()
     private var matcherItems = LinkedHashMap<String, ItemStack>()
+    var matcherWorldsBlack = LinkedHashMap<String, Set<String>>()
+        private set
+    var matcherWorldsWhite = LinkedHashMap<String, Set<String>>()
+        private set
+    var matcherSections = LinkedHashMap<String, ConfigurationSection>()
+        private set
 
     private val cache = CacheBuilder
         .newBuilder()
@@ -165,6 +177,16 @@ object Config : SimpleYAMLConfig() {
         return true
     }
 
+    fun <T> getConfigOr(itemStack: ItemStack, key: String, default: () -> T): T {
+        val setting = getSetting(itemStack) ?: return default()
+        val section = matcherSections[setting] ?: return default()
+        if (!section.contains(key)) {
+            return default()
+        }
+        return section.get(key) as T
+    }
+
+
     override fun onLoaded(section: ConfigurationSection) {
         val fromSection = ItemUtils.fromSection(sealed_item)
         if (fromSection == null) {
@@ -174,6 +196,9 @@ object Config : SimpleYAMLConfig() {
             info("&a新的封印材质为 ${globalItem.type}")
         }
         matcherItems.clear()
+        matcherWorldsBlack.clear()
+        matcherWorldsWhite.clear()
+        matcherSections.clear()
         matchers.clear()
         cache.cleanUp()
         item_matchers.getKeys(false).forEach {
@@ -181,7 +206,12 @@ object Config : SimpleYAMLConfig() {
                 val parseSection = MatcherManager
                     .parseSection(item_matchers.getConfigurationSection("${it}.match")!!)
                 matchers[it] = parseSection
-                val itemSection = item_matchers.getConfigurationSection("${it}.item")
+                matcherSections[it] = item_matchers.getConfigurationSection(it)!!
+                val black = item_matchers.getStringList("${it}.black-list")
+                if (black.isNotEmpty()) matcherWorldsBlack[it] = black.toHashSet()
+                val white = item_matchers.getStringList("${it}.white-list")
+                if (white.isNotEmpty()) matcherWorldsWhite[it] = white.toHashSet()
+                val itemSection = item_matchers.getConfigurationSection("${it}.sealed-item")
                 if (itemSection != null) matcherItems[it] = ItemUtils.fromSection(itemSection) ?: return
             } catch (e: Exception) {
                 warn("匹配器配置错误：$it")

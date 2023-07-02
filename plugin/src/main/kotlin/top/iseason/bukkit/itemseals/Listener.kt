@@ -48,10 +48,11 @@ object Listener : org.bukkit.event.Listener {
     fun onInvClick(event: InventoryClickEvent) {
         if (!Events.on_inventory_click) return
         val whoClicked = event.whoClicked as Player
-        val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked) ?: return
+//        val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked) ?: return
         val item = event.currentItem
         if (item.checkAir()) return
         cache.get(ClickCache(whoClicked, item!!)) {
+            val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked, item) ?: return@get false
             if (checkWorldSeal) {
                 val sealItem = ItemSeals.sealItem(item, whoClicked) ?: return@get false
                 item.type = sealItem.first.type

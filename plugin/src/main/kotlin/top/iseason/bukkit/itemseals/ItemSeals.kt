@@ -15,10 +15,7 @@ import top.iseason.bukkit.itemseals.command.commands
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkit.itemseals.config.Events
 import top.iseason.bukkit.itemseals.config.Lang
-import top.iseason.bukkit.itemseals.hook.BanItemHook
-import top.iseason.bukkit.itemseals.hook.PWPHook
-import top.iseason.bukkit.itemseals.hook.PlayerDataSQLHook
-import top.iseason.bukkit.itemseals.hook.SakuraBindHook
+import top.iseason.bukkit.itemseals.hook.*
 import top.iseason.bukkittemplate.BukkitPlugin
 import top.iseason.bukkittemplate.BukkitTemplate
 import top.iseason.bukkittemplate.command.CommandHandler
@@ -46,6 +43,7 @@ object ItemSeals : BukkitPlugin {
         SakuraBindHook.checkHooked()
         PlayerDataSQLHook.checkHooked()
         BanItemHook.checkHooked()
+        GermHook.checkHooked()
         if (PlayerDataSQLHook.hasHooked) {
             PlayerDataSQLHook.registerListener()
         }
@@ -71,7 +69,7 @@ object ItemSeals : BukkitPlugin {
         if (!force && !Config.isMatch(item, player)) {
             val itemMeta = item.itemMeta as? BlockStateMeta ?: return null
             val blockState = itemMeta.blockState as? InventoryHolder ?: return null
-            val c = sealInv(blockState.inventory, player)
+            val c = if (force) sealInv(blockState.inventory, player) else checkInv(blockState.inventory, player).first
             if (c > 0) {
                 itemMeta.blockState = blockState as BlockState
                 val clone = item.clone()
@@ -86,12 +84,13 @@ object ItemSeals : BukkitPlugin {
             val name = item.getDisplayName() ?: item.type.name
             if (hasDisplayName())
                 setDisplayName(displayName.formatBy(name))
-            if (itemMeta.hasLore() && Config.seal_lore_index >= 0) {
+            val loreIndex = Config.getConfigOr(item, "seal-lore-index") { Config.seal_lore_index }
+            if (itemMeta.hasLore() && loreIndex >= 0) {
                 val lore = itemMeta.lore!!
-                lore.addAll(min(Config.seal_lore_index, lore.size - 1), this.lore!!.map { it.formatBy(name) })
+                lore.addAll(min(loreIndex, lore.size - 1), this.lore!!.map { it.formatBy(name) })
                 this.lore = lore
             }
-            if (Config.highlight_sealed_item) {
+            if (Config.getConfigOr(item, "highlight-sealed-item") { Config.highlight_sealed_item }) {
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
                 itemMeta.addEnchant(Enchantment.DURABILITY, 1, true)
             }
@@ -161,6 +160,24 @@ object ItemSeals : BukkitPlugin {
         return count
     }
 
+    fun checkInv(inv: Inventory, player: Player): Pair<Int, Int> {
+        var scount = 0
+        var ucount = 0
+        for (i in 0 until inv.size) {
+            val item = inv.getItem(i)
+            if (item.checkAir()) {
+                continue
+            }
+            val checkWorldSeal = checkWorldSeal(player, item!!) ?: continue
+            val itm = if (checkWorldSeal) sealItem(item, player) else unSealItem(item)
+            itm ?: continue
+            if (checkWorldSeal) scount += itm.second else ucount += itm.second
+            val im = itm.first
+            inv.setItem(i, im)
+        }
+        return scount to ucount
+    }
+
     /**
      * @return true 需要封印 false 需要解封 null不操作
      */
@@ -179,36 +196,55 @@ object ItemSeals : BukkitPlugin {
         return null
     }
 
+    fun checkWorldSeal(player: Player, item: ItemStack): Boolean? {
+        if (Config.permission_check) {
+            if (player.hasPermission("itemseals.bypass")) return null
+            if (player.hasPermission("itemseals.seal")) return true
+            if (player.hasPermission("itemseals.unseal")) return false
+        }
+        val pwp = PWPHook.checkPlayerWorld(player, item)
+        if (pwp != null) return pwp
+        val name = player.world.name
+        val setting = Config.getSetting(item)
+        val black = Config.matcherWorldsBlack.getOrDefault(setting, Config.black_list)
+        if (black.contains(name) || black.contains("all")) {
+            return true
+        }
+        val white = Config.matcherWorldsWhite.getOrDefault(setting, Config.black_list)
+        if (white.contains(name) || white.contains("all")) {
+            return false
+        }
+        return null
+    }
+
     /**
      * 封印或解封玩家背包物品
      */
     fun checkPlayerBags(player: Player) {
-        val checkWorldSeal = checkWorldSeal(player)
-        debug("开始检查玩家 ${player.name} 的世界: ${checkWorldSeal}")
-        checkWorldSeal ?: return
         val inventory = player.inventory
-        var count = if (checkWorldSeal)
-            sealInv(inventory, player)
-        else unSealInv(inventory)
+        var (scount, ucount) = checkInv(inventory, player)
         if (BanItemHook.hasHooked) {
-            count += BanItemHook.getModInventories(player).sumOf {
-                val num = if (checkWorldSeal) sealInv(it, player)
-                else unSealInv(it)
+            BanItemHook.getModInventories(player).forEach {
+                val (s, u) = checkInv(it, player)
                 if (it is CCInventory) it.onOpEnd()
-                num
+                scount += s
+                ucount += u
             }
         }
-        if (count != 0) {
-            if (checkWorldSeal) {
-                player.sendColorMessage(Lang.seal_msg)
-                debug("已为玩家 ${player.name} 封印 $count 个物品")
-            } else {
-                player.sendColorMessage(Lang.un_seal_msg)
-                debug("已为玩家 ${player.name} 解封 $count 物品")
-            }
+        if (GermHook.hasHooked) {
+            val (s, u) = GermHook.checkInv(player)
+            scount += s
+            ucount += u
+        }
+        if (scount > 0) {
+            player.sendColorMessage(Lang.seal_msg)
+            debug("已为玩家 ${player.name} 封印 $scount 个物品")
+        }
+        if (ucount > 0) {
+            player.sendColorMessage(Lang.un_seal_msg)
+            debug("已为玩家 ${player.name} 解封 $ucount 物品")
         }
     }
-
 
     fun isSealedItem(item: ItemStack) = NBTEditor.contains(item, Config.seal_item_nbt)
 }

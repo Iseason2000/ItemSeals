@@ -2,6 +2,7 @@ package top.iseason.bukkit.itemseals.hook
 
 import cz._heropwp.playerworldspro.api.API
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkittemplate.hook.BaseHook
 
@@ -18,4 +19,11 @@ object PWPHook : BaseHook("PlayerWorldsPro") {
         return !API.isMember(player, worldOwner)
     }
 
+    fun checkPlayerWorld(player: Player, item: ItemStack): Boolean? {
+        if (!hasHooked) return null
+        if (!Config.getConfigOr(item, "hooks.player-worlds-pro") { Config.hooks__player_worlds_pro }) return null
+        val name = player.world.name
+        val worldOwner = runCatching { API.getUUIDOfPlayerWorldOwner(name) }.getOrNull() ?: return null
+        return !API.isMember(player, worldOwner)
+    }
 }

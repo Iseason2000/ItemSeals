@@ -13,7 +13,7 @@ import java.util.regex.Pattern
  */
 class TypeMatcher : BaseMatcher() {
     private var pattern: Pattern? = null
-    private var materials: Set<Material>? = null
+    var materials: Set<Material>? = null
     private var ids: Set<String>? = null
     private var materialIds: Set<String>? = null
 

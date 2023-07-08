@@ -11,15 +11,22 @@ object SakuraBindHook : BaseHook("SakuraBind") {
     fun bind(player: Player, item: ItemStack, raw: ItemStack) {
         if (!hasHooked || !Config.getConfigOr(item, "hooks.sakura-bind") { Config.hooks__sakura_bind }) return
         val setting = Config.getConfigOr(item, "hooks.sakura-bind-setting") { Config.hooks__sakura_bind_setting }
-        if (setting.isBlank() && SakuraBindAPI.hasBind(raw)) {
+        val hasBind = SakuraBindAPI.hasBind(raw)
+        val replace = Config.getConfigOr(item, "seal-lore-index") { Config.seal_lore_index } < 0
+        if (setting.isBlank()) {
             val itemSetting = SakuraBindAPI.getItemSetting(raw)
             SakuraBindAPI.bind(
                 item,
                 player,
                 setting = itemSetting,
-                showLore = Config.getConfigOr(item, "seal-lore-index") { Config.seal_lore_index } < 0)
+                showLore = replace || !hasBind
+            )
         } else {
-            SakuraBindAPI.bind(item, player, setting = SakuraBindAPI.getSetting(Config.hooks__sakura_bind_setting))
+            SakuraBindAPI.bind(
+                item, player,
+                setting = SakuraBindAPI.getSetting(Config.hooks__sakura_bind_setting),
+                showLore = replace || !hasBind
+            )
         }
     }
 

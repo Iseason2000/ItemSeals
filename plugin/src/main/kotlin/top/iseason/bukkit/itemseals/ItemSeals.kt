@@ -80,14 +80,18 @@ object ItemSeals : BukkitPlugin {
         }
         val base64 = item.toBase64()
         val itemMeta = item.itemMeta!!
-        val itemStack = Config.getSealedItemPattern(item).clone().applyMeta {
+        val setting = Config.getSetting(item)
+        var itemClone = Config.getSealedItemPattern(item).clone()
+        SakuraBindHook.bind(player, itemClone, item)
+        val itemStack = itemClone.applyMeta {
             val name = item.getDisplayName() ?: item.type.name
             if (hasDisplayName())
                 setDisplayName(displayName.formatBy(name))
             val loreIndex = Config.getConfigOr(item, "seal-lore-index") { Config.seal_lore_index }
             if (itemMeta.hasLore() && loreIndex >= 0) {
                 val lore = itemMeta.lore!!
-                lore.addAll(min(loreIndex, lore.size - 1), this.lore!!.map { it.formatBy(name) })
+                if (this.hasLore())
+                    lore.addAll(min(loreIndex, lore.size - 1), this.lore!!.map { it.formatBy(name) })
                 this.lore = lore
             }
             if (Config.getConfigOr(item, "highlight-sealed-item") { Config.highlight_sealed_item }) {
@@ -95,9 +99,11 @@ object ItemSeals : BukkitPlugin {
                 itemMeta.addEnchant(Enchantment.DURABILITY, 1, true)
             }
         }.toColorPapi(player)
-        SakuraBindHook.bind(player, itemStack, item)
+
         var set = NBTEditor.set(itemStack, base64, Config.seal_item_nbt)
-        set = NBTEditor.set(set, UUID.randomUUID().toString(), "itemseals_unique_id")
+        set = NBTEditor.set(set, UUID.randomUUID().toString(), "item_seals_unique_id")
+        if (setting != null)
+            set = NBTEditor.set(set, setting, "item_seals_setting")
         return set to 1
     }
 
@@ -169,6 +175,8 @@ object ItemSeals : BukkitPlugin {
                 continue
             }
             val checkWorldSeal = checkWorldSeal(player, item!!) ?: continue
+            if (checkWorldSeal && isSealedItem(item)) continue
+            debug("物品：${item.type} 检查是否封印: $checkWorldSeal")
             val itm = if (checkWorldSeal) sealItem(item, player) else unSealItem(item)
             itm ?: continue
             if (checkWorldSeal) scount += itm.second else ucount += itm.second
@@ -197,22 +205,30 @@ object ItemSeals : BukkitPlugin {
     }
 
     fun checkWorldSeal(player: Player, item: ItemStack): Boolean? {
+        val setting = Config.getSetting(item)
         if (Config.permission_check) {
             if (player.hasPermission("itemseals.bypass")) return null
             if (player.hasPermission("itemseals.seal")) return true
             if (player.hasPermission("itemseals.unseal")) return false
+            if (setting != null) {
+                if (player.hasPermission("itemseals.$setting.bypass")) return null
+                if (player.hasPermission("itemseals.$setting.seal")) return true
+                if (player.hasPermission("itemseals.$setting.unseal")) return false
+            }
         }
         val pwp = PWPHook.checkPlayerWorld(player, item)
         if (pwp != null) return pwp
         val name = player.world.name
-        val setting = Config.getSetting(item)
+        val reverse = Config.getConfigOr(item, "reverse-order") { Config.reverse_order }
         val black = Config.matcherWorldsBlack.getOrDefault(setting, Config.black_list)
-        if (black.contains(name) || black.contains("all")) {
-            return true
+        val white = Config.matcherWorldsWhite.getOrDefault(setting, Config.white_list)
+        val first = if (reverse) white else black
+        val second = if (reverse) black else white
+        if (first.contains(name) || first.contains("all")) {
+            return !reverse
         }
-        val white = Config.matcherWorldsWhite.getOrDefault(setting, Config.black_list)
-        if (white.contains(name) || white.contains("all")) {
-            return false
+        if (second.contains(name) || second.contains("all")) {
+            return reverse
         }
         return null
     }

@@ -1,6 +1,7 @@
 package top.iseason.bukkit.itemseals.config
 
 import com.google.common.cache.CacheBuilder
+import io.github.bananapuncher714.nbteditor.NBTEditor
 import org.bukkit.Material
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.MemorySection
@@ -36,6 +37,14 @@ object Config : SimpleYAMLConfig() {
     )
     var white_list = hashSetOf("all")
 
+    @Key
+    @Comment(
+        "", "默认是先检测黑名单再检测白名单",
+        "开启此项将先检测白名单再检测黑名单"
+    )
+    var reverse_order = false
+
+    // 颠倒顺序
     @Key
     @Comment("", "默认是在玩家切换世界时检查，此处为是否是异步检查, 如果存在问题请设置为false")
     var async_check_on_world_change = true
@@ -74,7 +83,7 @@ object Config : SimpleYAMLConfig() {
     var hooks: MemorySection? = null
 
     @Key
-    @Comment("", "兼容pwp，在玩家有权限的家园解除封印，其他家园封印")
+    @Comment("", "兼容pwp，在玩家有权限的家园解除封印，其他家园封印,检测顺序在黑白名单之前")
     var hooks__player_worlds_pro = false
 
     @Key
@@ -100,6 +109,8 @@ object Config : SimpleYAMLConfig() {
         "itemseals.seal 封印物品",
         "itemseals.unseal 解封物品",
         "itemseals.[matcher].bypass 不封印特定matcher的物品",
+        "itemseals.[matcher].seal 封印特定matcher的物品",
+        "itemseals.[matcher].unseal 解封特定matcher的物品",
     )
     var permission_check = true
 
@@ -122,7 +133,7 @@ object Config : SimpleYAMLConfig() {
         "example 是一个例子，example作为该匹配器的组名，可用于权限控制",
         "在匹配器里可以覆盖全局设置, 支持的键如下",
         "black-list、white-list、sealed-item、seal-lore-index、highlight-sealed-item",
-        "hooks.player-worlds-pro、hooks.sakura-bind、hooks.sakura-bind-setting、hooks.germ"
+        "hooks.player-worlds-pro、hooks.sakura-bind、hooks.sakura-bind-setting、hooks.germ、reverse-order"
     )
     var item_matchers: MemorySection = YamlConfiguration().apply {
         createSection("example").apply {
@@ -147,14 +158,22 @@ object Config : SimpleYAMLConfig() {
 
     private val cache = CacheBuilder
         .newBuilder()
-        .expireAfterAccess(10, TimeUnit.SECONDS)
+        .expireAfterWrite(10, TimeUnit.SECONDS)
+        .expireAfterAccess(3, TimeUnit.SECONDS)
         .build<ItemStack, String>()
 
     private const val NOT_MATCH = "z6R08ED6hvMeEnTQUvnYxQO5FQI81ucd6HA7xAj6B1yX8c7yQjRyok2xWKSlJLL1"
 
     fun getSetting(itemStack: ItemStack): String? {
         val key = cache.get(itemStack) {
-            matchers.entries.find { m -> m.value.all { it.tryMatch(itemStack) } }?.key ?: NOT_MATCH
+            val sealSetting = NBTEditor.getString(itemStack, "item_seals_setting")
+            if (sealSetting != null) return@get sealSetting
+            matchers.entries.find { m ->
+                if (m.value.isEmpty()) return@find false
+                m.value.all {
+                    it.tryMatch(itemStack)
+                }
+            }?.key ?: NOT_MATCH
         }
         return if (key == NOT_MATCH) null
         else key

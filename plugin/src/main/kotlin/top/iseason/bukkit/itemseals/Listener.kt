@@ -47,30 +47,30 @@ object Listener : org.bukkit.event.Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     fun onInvClick(event: InventoryClickEvent) {
         if (!Events.on_inventory_click) return
-        val whoClicked = event.whoClicked as Player
+        val whoClicked = event.whoClicked as? Player ?: return
 //        val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked) ?: return
         val item = event.currentItem
         if (item.checkAir()) return
-        cache.get(ClickCache(whoClicked, item!!)) {
+        val clickCache = ClickCache(whoClicked, item!!)
+        val isPass = cache.get(clickCache) {
             val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked, item) ?: return@get false
             if (checkWorldSeal) {
-                val sealItem = ItemSeals.sealItem(item, whoClicked) ?: return@get false
-                item.type = sealItem.first.type
-                item.itemMeta = sealItem.first.itemMeta
-                item.amount = 1
+                if (ItemSeals.isSealedItem(item)) return@get false
+                val (sealItem, _) = ItemSeals.sealItem(item, whoClicked) ?: return@get false
+                event.currentItem = sealItem
                 whoClicked.sendColorMessage(Lang.on_click_seal_msg)
                 event.isCancelled = true
                 return@get true
             } else {
-                val sealItem = ItemSeals.unSealItem(item) ?: return@get false
-                item.type = sealItem.first.type
-                item.itemMeta = sealItem.first.itemMeta
-                item.amount = 1
+                if (!ItemSeals.isSealedItem(item)) return@get false
+                val (sealItem, _) = ItemSeals.unSealItem(item) ?: return@get false
+                event.currentItem = sealItem
                 whoClicked.sendColorMessage(Lang.on_click_un_seal_msg)
                 event.isCancelled = true
                 return@get true
             }
         }
+        if (isPass) cache.invalidate(clickCache)
     }
 
     private class ClickCache(val player: Player, val itemStack: ItemStack) {

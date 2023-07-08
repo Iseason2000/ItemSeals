@@ -22,6 +22,9 @@ import top.iseason.bukkittemplate.command.CommandHandler
 import top.iseason.bukkittemplate.config.SimpleYAMLConfig
 import top.iseason.bukkittemplate.debug.debug
 import top.iseason.bukkittemplate.debug.info
+import top.iseason.bukkittemplate.hook.ItemsAdderHook
+import top.iseason.bukkittemplate.hook.MMOItemsHook
+import top.iseason.bukkittemplate.hook.OraxenHook
 import top.iseason.bukkittemplate.utils.bukkit.EventUtils.registerListener
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.applyMeta
@@ -45,6 +48,9 @@ object ItemSeals : BukkitPlugin {
         PlayerDataSQLHook.checkHooked()
         BanItemHook.checkHooked()
         GermHook.checkHooked()
+        ItemsAdderHook
+        OraxenHook
+        MMOItemsHook
         if (PlayerDataSQLHook.hasHooked) {
             PlayerDataSQLHook.registerListener()
         }

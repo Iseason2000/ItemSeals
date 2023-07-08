@@ -24,7 +24,7 @@ object SakuraBindHook : BaseHook("SakuraBind") {
         } else {
             SakuraBindAPI.bind(
                 item, player,
-                setting = SakuraBindAPI.getSetting(Config.hooks__sakura_bind_setting),
+                setting = SakuraBindAPI.getSetting(setting),
                 showLore = replace || !hasBind
             )
         }

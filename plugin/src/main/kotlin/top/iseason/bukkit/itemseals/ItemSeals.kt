@@ -32,6 +32,7 @@ import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.toColorPapi
 import top.iseason.bukkittemplate.utils.bukkit.MessageUtils.formatBy
 import top.iseason.bukkittemplate.utils.bukkit.MessageUtils.sendColorMessage
 import java.util.*
+import java.util.regex.Pattern
 import kotlin.math.min
 
 @Suppress("UNUSED")
@@ -220,10 +221,20 @@ object ItemSeals : BukkitPlugin {
         if (pwp != null) return pwp
         val name = player.world.name
         val reverse = Config.getConfigOr(item, "reverse-order") { Config.reverse_order }
+        val pattern = Config.getConfigOr(item, "enable-world-name-pattern") { Config.enable_world_name_pattern }
         val black = Config.matcherWorldsBlack.getOrDefault(setting, Config.black_list)
         val white = Config.matcherWorldsWhite.getOrDefault(setting, Config.white_list)
         val first = if (reverse) white else black
         val second = if (reverse) black else white
+        if (pattern) {
+            if (first.any { Pattern.compile(it).matcher(name).find() }) {
+                return !reverse
+            }
+            if (second.any { Pattern.compile(it).matcher(name).find() }) {
+                return reverse
+            }
+            return null
+        }
         if (first.contains(name) || first.contains("all")) {
             return !reverse
         }

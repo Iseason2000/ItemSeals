@@ -39,12 +39,20 @@ object Config : SimpleYAMLConfig() {
 
     @Key
     @Comment(
+        "",
+        "在黑白名单中的世界名使用正则表达式而不是全名匹配",
+        "性能消耗略有增加, 测试网站: https://www.bejson.com/othertools/regex/"
+    )
+    var enable_world_name_pattern = false
+
+    @Key
+    @Comment(
         "", "默认是先检测黑名单再检测白名单",
         "开启此项将先检测白名单再检测黑名单"
     )
     var reverse_order = false
 
-    // 颠倒顺序
+
     @Key
     @Comment("", "默认是在玩家切换世界时检查，此处为是否是异步检查, 如果存在问题请设置为false")
     var async_check_on_world_change = true
@@ -131,9 +139,9 @@ object Config : SimpleYAMLConfig() {
         "注：lore、lore-without-color 及其!后缀互斥。 互斥就是只能同时存在其中一个",
         "所有条件取交集",
         "example 是一个例子，example作为该匹配器的组名，可用于权限控制",
-        "在匹配器里可以覆盖全局设置, 支持的键如下",
-        "black-list、white-list、sealed-item、seal-lore-index、highlight-sealed-item",
-        "hooks.player-worlds-pro、hooks.sakura-bind、hooks.sakura-bind-setting、hooks.germ、reverse-order"
+        "在匹配器里可以覆盖全局设置, 不支持的键如下",
+        "async-check-on-world-change、login-check-delay、seal-item-nbt",
+        "hooks.germ、hooks.sakura_bind、hooks.sakura-bind、hooks.player-data-sql"
     )
     var item_matchers: MemorySection = YamlConfiguration().apply {
         createSection("example").apply {

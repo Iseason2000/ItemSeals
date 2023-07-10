@@ -8,16 +8,19 @@ import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkittemplate.hook.BaseHook
 
 object PWPHook : BaseHook("PlayerWorldsPro") {
-    private val main = API::class.java.getDeclaredField("main").apply {
-        isAccessible = true
-    }.get(null) as Main
-
-    // pwp自己有bug读取不到uuid
-    private val isSameJar = try {
-        main.B().a("")
-        true
-    } catch (e: Throwable) {
-        false
+    private var main: Main? = null
+    private var isSameJar: Boolean = false
+    fun init() {
+        if (!hasHooked) return
+        main = API::class.java.getDeclaredField("main").apply {
+            isAccessible = true
+        }.get(null) as Main
+        isSameJar = try {
+            main!!.B().a("")
+            true
+        } catch (e: Throwable) {
+            false
+        }
     }
 
     /**
@@ -28,7 +31,7 @@ object PWPHook : BaseHook("PlayerWorldsPro") {
         if (!Config.hooks__player_worlds_pro) return null
         val name = player.world.name
         val worldOwner = if (isSameJar)
-            main.B().a(name) ?: return null
+            main!!.B().a(name) ?: return null
         else
             runCatching { API.getUUIDOfPlayerWorldOwner(name) }.getOrNull() ?: return null
         return !API.isMember(player, worldOwner)
@@ -39,7 +42,7 @@ object PWPHook : BaseHook("PlayerWorldsPro") {
         if (!Config.getConfigOr(item, "hooks.player-worlds-pro") { Config.hooks__player_worlds_pro }) return null
         val name = player.world.name
         val worldOwner = if (isSameJar)
-            main.B().a(name) ?: return null
+            main!!.B().a(name) ?: return null
         else
             runCatching { API.getUUIDOfPlayerWorldOwner(name) }.getOrNull() ?: return null
         return !API.isMember(player, worldOwner)

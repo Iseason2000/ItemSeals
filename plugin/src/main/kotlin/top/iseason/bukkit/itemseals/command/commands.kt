@@ -17,6 +17,7 @@ internal fun commands() {
     command("itemseals") {
         alias = arrayOf("is", "iss")
         default = PermissionDefault.OP
+        async = true
         node("seal") {
             description = "封印玩家手上的物品"
             default = PermissionDefault.OP
@@ -34,6 +35,7 @@ internal fun commands() {
         node("sealAll") {
             description = "封印玩家背包的所有物品"
             default = PermissionDefault.OP
+            async = true
             param("<player>", suggestRuntime = ParamSuggestCache.playerParam)
             executor { params, sender ->
                 val player = params.next<Player>()
@@ -52,6 +54,7 @@ internal fun commands() {
         node("checkSealAll") {
             description = "封印玩家背包的所有符合规则的物品"
             default = PermissionDefault.OP
+            async = true
             param("<player>", suggestRuntime = ParamSuggestCache.playerParam)
             executor { params, sender ->
                 val player = params.next<Player>()
@@ -70,6 +73,7 @@ internal fun commands() {
         node("unseal") {
             description = "解封玩家手上的物品"
             default = PermissionDefault.OP
+            async = true
             param("<player>", suggestRuntime = ParamSuggestCache.playerParam)
             executor { params, sender ->
                 val player = params.next<Player>()
@@ -85,6 +89,7 @@ internal fun commands() {
         node("unsealAll") {
             description = "解封玩家背包的所有物品"
             default = PermissionDefault.OP
+            async = true
             param("<player>", suggestRuntime = ParamSuggestCache.playerParam)
             executor { params, sender ->
                 val player = params.next<Player>()
@@ -103,6 +108,7 @@ internal fun commands() {
         node("reload") {
             description = "重载配置"
             default = PermissionDefault.OP
+            async = true
             executor { _, _ ->
                 Config.load()
                 Lang.load()
@@ -116,5 +122,20 @@ internal fun commands() {
                 sender.sendColorMessage("Debug模式: ${SimpleLogger.isDebug}")
             }
         }
+//
+//        node("translation") {
+//            description = "生成材质语言文件"
+//            default = PermissionDefault.OP
+//            async = true
+//            executor { _, sender ->
+//                val yml = YamlConfiguration()
+//                for (value in Material.values()) {
+//                    yml.set(value.name, value.name.replace('_', ' ').lowercase())
+//                }
+//                val file = File(BukkitTemplate.getPlugin().dataFolder, "translation.yml")
+//                yml.save(file)
+//                sender.sendColorMessage("语言文件已保存到: ${file.absolutePath}")
+//            }
+//        }
     }
 }

@@ -41,9 +41,10 @@ import kotlin.math.min
 @Suppress("UNUSED")
 object ItemSeals : BukkitPlugin {
 
-    override fun onAsyncEnable() {
+    override fun onEnable() {
         SimpleYAMLConfig.notifyMessage = "&a配置文件 &7%s &a已重载"
         PWPHook.checkHooked()
+        PWPHook.init()
         SakuraBindHook.checkHooked()
         PlayerDataSQLHook.checkHooked()
         BanItemHook.checkHooked()

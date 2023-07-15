@@ -87,6 +87,11 @@ object Config : SimpleYAMLConfig() {
     var seal_item_nbt = "item_seals"
 
     @Key
+    @Comment("", "检查容器类物品里的物品, 如果你是模组服建议关闭")
+    var check_container_item = true
+
+    //    容器
+    @Key
     @Comment("", "插件兼容")
     var hooks: MemorySection? = null
 
@@ -141,7 +146,7 @@ object Config : SimpleYAMLConfig() {
         "example 是一个例子，example作为该匹配器的组名，可用于权限控制",
         "在匹配器里可以覆盖全局设置, 不支持的键如下",
         "async-check-on-world-change、login-check-delay、seal-item-nbt",
-        "hooks.germ、hooks.sakura_bind、hooks.sakura-bind、hooks.player-data-sql"
+        "hooks.germ、hooks.sakura_bind、hooks.sakura-bind、hooks.player-data-sql、check-container-item"
     )
     var item_matchers: MemorySection = YamlConfiguration().apply {
         createSection("example").apply {
@@ -173,18 +178,23 @@ object Config : SimpleYAMLConfig() {
     private const val NOT_MATCH = "z6R08ED6hvMeEnTQUvnYxQO5FQI81ucd6HA7xAj6B1yX8c7yQjRyok2xWKSlJLL1"
 
     fun getSetting(itemStack: ItemStack): String? {
-        val key = cache.get(itemStack) {
-            val sealSetting = NBTEditor.getString(itemStack, "item_seals_setting")
-            if (sealSetting != null) return@get sealSetting
-            matchers.entries.find { m ->
-                if (m.value.isEmpty()) return@find false
-                m.value.all {
-                    it.tryMatch(itemStack)
-                }
-            }?.key ?: NOT_MATCH
+        try {
+            val key = cache.get(itemStack) {
+                val sealSetting = NBTEditor.getString(itemStack, "item_seals_setting")
+                if (sealSetting != null) return@get sealSetting
+                matchers.entries.find { m ->
+                    if (m.value.isEmpty()) return@find false
+                    m.value.all {
+                        it.tryMatch(itemStack)
+                    }
+                }?.key ?: NOT_MATCH
+            }
+            return if (key == NOT_MATCH) null
+            else key
+        } catch (e: NullPointerException) {
+            // CatServer 对 CraftMetaBookSigned取hash会报错，很sb
+            return null
         }
-        return if (key == NOT_MATCH) null
-        else key
     }
 
     fun getSealedItemPattern(itemStack: ItemStack): ItemStack {

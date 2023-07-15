@@ -75,16 +75,22 @@ object ItemSeals : BukkitPlugin {
      */
     fun sealItem(item: ItemStack, player: Player, force: Boolean = false): Pair<ItemStack, Int>? {
         if (!force && !Config.isMatch(item, player)) {
-            val itemMeta = item.itemMeta as? BlockStateMeta ?: return null
-            val blockState = itemMeta.blockState as? InventoryHolder ?: return null
-            val c = if (force) sealInv(blockState.inventory, player) else checkInv(blockState.inventory, player).first
-            if (c > 0) {
-                itemMeta.blockState = blockState as BlockState
-                val clone = item.clone()
-                clone.itemMeta = itemMeta
-                return clone to c
+            if (!Config.check_container_item) return null
+            try {
+                val itemMeta = item.itemMeta as? BlockStateMeta ?: return null
+                val blockState = itemMeta.blockState as? InventoryHolder ?: return null
+                val c =
+                    if (force) sealInv(blockState.inventory, player) else checkInv(blockState.inventory, player).first
+                if (c > 0) {
+                    itemMeta.blockState = blockState as BlockState
+                    val clone = item.clone()
+                    clone.itemMeta = itemMeta
+                    return clone to c
+                }
+                return null
+            } catch (_: RuntimeException) {
+                return null
             }
-            return null
         }
         val base64 = item.toBase64()
         val itemMeta = item.itemMeta!!
@@ -123,16 +129,21 @@ object ItemSeals : BukkitPlugin {
     fun unSealItem(item: ItemStack): Pair<ItemStack, Int>? {
         val base64 = NBTEditor.getString(item, Config.seal_item_nbt)
         if (base64 == null) {
-            val itemMeta = item.itemMeta as? BlockStateMeta ?: return null
-            val blockState = itemMeta.blockState as? InventoryHolder ?: return null
-            val c = unSealInv(blockState.inventory)
-            if (c > 0) {
-                itemMeta.blockState = blockState as BlockState
-                val clone = item.clone()
-                clone.itemMeta = itemMeta
-                return clone to c
+            if (!Config.check_container_item) return null
+            try {
+                val itemMeta = item.itemMeta as? BlockStateMeta ?: return null
+                val blockState = itemMeta.blockState as? InventoryHolder ?: return null
+                val c = unSealInv(blockState.inventory)
+                if (c > 0) {
+                    itemMeta.blockState = blockState as BlockState
+                    val clone = item.clone()
+                    clone.itemMeta = itemMeta
+                    return clone to c
+                }
+                return null
+            } catch (_: RuntimeException) {
+                return null
             }
-            return null
         }
         return ItemUtils.fromBase64ToItemStack(base64) to 1
     }

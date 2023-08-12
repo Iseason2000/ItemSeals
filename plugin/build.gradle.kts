@@ -19,7 +19,6 @@ dependencies {
     compileOnly(fileTree("libs") { include("*.jar") })
     implementation("org.bstats:bstats-bukkit:3.0.1")
 
-
 }
 
 // 插件名称，请在gradle.properties 修改

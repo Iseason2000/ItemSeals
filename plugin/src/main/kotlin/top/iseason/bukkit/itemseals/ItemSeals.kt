@@ -79,8 +79,7 @@ object ItemSeals : BukkitPlugin {
             try {
                 val itemMeta = item.itemMeta as? BlockStateMeta ?: return null
                 val blockState = itemMeta.blockState as? InventoryHolder ?: return null
-                val c =
-                    if (force) sealInv(blockState.inventory, player) else checkInv(blockState.inventory, player).first
+                val c = checkInv(blockState.inventory, player).first
                 if (c > 0) {
                     itemMeta.blockState = blockState as BlockState
                     val clone = item.clone()
@@ -95,7 +94,7 @@ object ItemSeals : BukkitPlugin {
         val base64 = item.toBase64()
         val itemMeta = item.itemMeta!!
         val setting = Config.getSetting(item)
-        var itemClone = Config.getSealedItemPattern(item).clone()
+        val itemClone = Config.getSealedItemPattern(item).clone()
         SakuraBindHook.bind(player, itemClone, item)
         val itemStack = itemClone.applyMeta {
             val name = item.getDisplayName() ?: item.type.name
@@ -179,8 +178,7 @@ object ItemSeals : BukkitPlugin {
             }
             val itm = unSealItem(item!!) ?: continue
             count += itm.second
-            var im = itm.first
-            inv.setItem(i, im)
+            inv.setItem(i, itm.first)
         }
         return count
     }
@@ -200,7 +198,8 @@ object ItemSeals : BukkitPlugin {
             itm ?: continue
             if (checkWorldSeal) scount += itm.second else ucount += itm.second
             val im = itm.first
-            inv.setItem(i, im)
+            if (inv.getItem(i) === item) // 校验
+                inv.setItem(i, im)
         }
         return scount to ucount
     }

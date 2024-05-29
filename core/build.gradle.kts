@@ -25,6 +25,9 @@ dependencies {
     compileOnly("com.github.oraxen:oraxen:1.155.3") { isTransitive = false }
 }
 tasks {
+    kotlin {
+        jvmToolchain(8)
+    }
     compileJava {
         options.isFailOnError = false
         options.isWarnings = false

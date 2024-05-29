@@ -66,8 +66,8 @@ tasks {
     build {
         dependsOn("buildPlugin")
     }
-    compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+    kotlin {
+        jvmToolchain(8)
     }
     processResources {
         filesMatching("plugin.yml") {

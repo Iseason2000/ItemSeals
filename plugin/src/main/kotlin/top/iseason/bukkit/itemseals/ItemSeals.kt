@@ -198,7 +198,7 @@ object ItemSeals : BukkitPlugin {
             itm ?: continue
             if (checkWorldSeal) scount += itm.second else ucount += itm.second
             val im = itm.first
-            if (inv.getItem(i) === item) // 校验
+//            if (inv.getItem(i) === item) // 校验
                 inv.setItem(i, im)
         }
         return scount to ucount

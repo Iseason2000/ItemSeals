@@ -9,7 +9,8 @@ import top.iseason.bukkittemplate.config.annotations.Comment
 import top.iseason.bukkittemplate.config.annotations.FilePath
 import top.iseason.bukkittemplate.config.annotations.Key
 import top.iseason.bukkittemplate.debug.info
-import top.iseason.bukkittemplate.utils.bukkit.SchedulerUtils.submit
+import top.iseason.bukkittemplate.utils.other.submit
+
 
 @FilePath("events.yml")
 object Events : SimpleYAMLConfig() {

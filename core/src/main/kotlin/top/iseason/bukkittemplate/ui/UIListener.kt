@@ -21,8 +21,8 @@ import top.iseason.bukkittemplate.ui.slot.IOSlot
 import top.iseason.bukkittemplate.ui.slot.merge
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.checkAir
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.decrease
-import top.iseason.bukkittemplate.utils.bukkit.SchedulerUtils.submit
 import top.iseason.bukkittemplate.utils.other.WeakCoolDown
+import top.iseason.bukkittemplate.utils.other.submit
 
 /**
  * 负责所有UI的监听动作

@@ -1,13 +1,23 @@
 plugins {
     kotlin("jvm")
+    id("com.github.johnrengelman.shadow")
 }
 
+buildscript {
+    dependencies {
+        classpath("com.guardsquare:proguard-gradle:7.5.0")
+    }
+}
 repositories {
     mavenCentral()
+    maven {
+        name = "MMOItems"
+        url = uri("https://nexus.phoenixdevt.fr/repository/maven-public/")
+    }
 }
 
 dependencies {
-    // 依赖core模块
+// 依赖core模块
     api(project(":core"))
 //    反射库
 //    compileOnly(kotlin("reflect"))
@@ -15,10 +25,9 @@ dependencies {
 //    协程库
 //    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2")
 
-    // 本地依赖放在libs文件夹内
+// 本地依赖放在libs文件夹内
+    implementation("org.bstats:bstats-bukkit:3.0.2")
     compileOnly(fileTree("libs") { include("*.jar") })
-    implementation("org.bstats:bstats-bukkit:3.0.1")
-
 }
 
 // 插件名称，请在gradle.properties 修改
@@ -56,6 +65,18 @@ val output: File =
         File(formatJarOutput, "${rootProject.name}-${rootProject.version}.jar").absoluteFile
 
 tasks {
+    compileJava {
+        options.encoding = "UTF-8"
+    }
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(8))
+        }
+    }
+    kotlin {
+        jvmToolchain(8)
+    }
+
     shadowJar {
         if (isObfuscated) {
             relocate("top.iseason.bukkittemplate.BukkitTemplate", obfuscatedMainClass)
@@ -66,9 +87,6 @@ tasks {
     }
     build {
         dependsOn("buildPlugin")
-    }
-    kotlin {
-        jvmToolchain(8)
     }
     processResources {
         filesMatching("plugin.yml") {

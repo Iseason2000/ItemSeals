@@ -5,7 +5,7 @@ import org.bukkit.event.EventHandler
 import top.iseason.bukkit.itemseals.ItemSeals
 import top.iseason.bukkit.itemseals.config.Config
 import top.iseason.bukkittemplate.hook.BaseHook
-import top.iseason.bukkittemplate.utils.bukkit.SchedulerUtils.submit
+import top.iseason.bukkittemplate.utils.other.submit
 
 
 object PlayerDataSQLHook : BaseHook("PlayerDataSQL"), org.bukkit.event.Listener {

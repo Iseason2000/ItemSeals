@@ -14,11 +14,10 @@ object SakuraBindHook : BaseHook("SakuraBind") {
         val hasBind = SakuraBindAPI.hasBind(raw)
         val replace = Config.getConfigOr(item, "seal-lore-index") { Config.seal_lore_index } < 0
         if (setting.isBlank()) {
-            val itemSetting = SakuraBindAPI.getItemSetting(raw)
             SakuraBindAPI.bind(
                 item,
                 player,
-                setting = itemSetting,
+                setting = SakuraBindAPI.getItemSetting(raw),
                 showLore = replace || !hasBind
             )
         } else {

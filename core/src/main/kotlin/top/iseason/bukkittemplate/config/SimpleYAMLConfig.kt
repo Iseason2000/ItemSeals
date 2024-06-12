@@ -11,7 +11,7 @@ import top.iseason.bukkittemplate.config.type.DefaultConfigType
 import top.iseason.bukkittemplate.debug.debug
 import top.iseason.bukkittemplate.debug.info
 import top.iseason.bukkittemplate.debug.warn
-import top.iseason.bukkittemplate.utils.bukkit.SchedulerUtils.submit
+import top.iseason.bukkittemplate.utils.other.submit
 import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
@@ -71,7 +71,7 @@ open class SimpleYAMLConfig(
     /**
      * 本配置类的所有项
      */
-    private val keys = buildList {
+    private val keys: List<ConfigKey> = mutableListOf<ConfigKey>().apply {
         //当前类是否标注了 @Key
         val isAllKey = this@SimpleYAMLConfig.javaClass.getAnnotation(Key::class.java) != null
         var superClass: Class<*>? = this@SimpleYAMLConfig::class.java
@@ -202,6 +202,10 @@ open class SimpleYAMLConfig(
             val key = iterator.next()
             //获取并设置注释
             var keyName = key.key
+            //识别@键 SakuraBind start
+            val anotherName = if (keyName.endsWith('@')) keyName.substring(0, keyName.length - 1) else "$keyName@"
+            keyName = if (newConfig.contains(anotherName)) anotherName else keyName
+            // SakuraBind end
             val configType = typeMap[key.field]!!
             if (isReadOnly) {
                 val value = newConfig.get(keyName)

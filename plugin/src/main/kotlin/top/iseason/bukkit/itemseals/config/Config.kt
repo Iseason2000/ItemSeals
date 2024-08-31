@@ -1,7 +1,7 @@
 package top.iseason.bukkit.itemseals.config
 
 import com.google.common.cache.CacheBuilder
-import io.github.bananapuncher714.nbteditor.NBTEditor
+import de.tr7zw.nbtapi.NBT
 import org.bukkit.Material
 import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.configuration.MemorySection
@@ -180,7 +180,7 @@ object Config : SimpleYAMLConfig() {
     fun getSetting(itemStack: ItemStack): String? {
         try {
             val key = cache.get(itemStack) {
-                val sealSetting = NBTEditor.getString(itemStack, "item_seals_setting")
+                val sealSetting = NBT.get<String>(itemStack) { it.getString("item_seals_setting") }
                 if (sealSetting != null) return@get sealSetting
                 matchers.entries.find { m ->
                     if (m.value.isEmpty()) return@find false

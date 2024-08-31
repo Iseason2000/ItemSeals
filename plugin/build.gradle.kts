@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm")
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 buildscript {
@@ -8,16 +8,9 @@ buildscript {
         classpath("com.guardsquare:proguard-gradle:7.5.0")
     }
 }
-repositories {
-    mavenCentral()
-    maven {
-        name = "MMOItems"
-        url = uri("https://nexus.phoenixdevt.fr/repository/maven-public/")
-    }
-}
 
 dependencies {
-// 依赖core模块
+    // 依赖core模块
     api(project(":core"))
 //    反射库
 //    compileOnly(kotlin("reflect"))
@@ -25,7 +18,7 @@ dependencies {
 //    协程库
 //    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2")
 
-// 本地依赖放在libs文件夹内
+    // 本地依赖放在libs文件夹内
     implementation("org.bstats:bstats-bukkit:3.0.2")
     compileOnly(fileTree("libs") { include("*.jar") })
 }
@@ -33,18 +26,12 @@ dependencies {
 // 插件名称，请在gradle.properties 修改
 val pluginName: String by rootProject
 //包名，请在gradle.properties 修改
-val group: String by rootProject
-val groupS = group
+//val group: String by rootProject
+val groupS = project.group as String
 // 作者，请在gradle.properties 修改
 val author: String by rootProject
 // jar包输出路径，请在gradle.properties 修改
 val jarOutputFile: String by rootProject
-//插件版本，请在gradle.properties 修改
-val version: String by rootProject
-// shadowJar 版本 ，请在gradle.properties 修改
-val shadowJar: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar by tasks
-// exposed 数据库框架版本，请在gradle.properties 修改
-val exposedVersion: String by rootProject
 val obfuscated: String by rootProject
 val obfuscatedDictionary: String by rootProject
 val obfuscationDictionaryFile: File? = if (obfuscatedDictionary.isEmpty()) null
@@ -56,7 +43,6 @@ val obfuscatedMainClass =
     } else "a"
 val isObfuscated = obfuscated == "true"
 val shrink: String by rootProject
-val defaultFile = File("../build", "${rootProject.name}-${rootProject.version}.jar")
 val formatJarOutput = jarOutputFile.replace("\${root}", rootProject.projectDir.absolutePath)
 val output: File =
     if (isObfuscated)
@@ -83,7 +69,6 @@ tasks {
         }
         relocate("top.iseason.bukkittemplate", "$groupS.libs.core")
         relocate("org.bstats", "$groupS.libs.bstats")
-        relocate("io.github.bananapuncher714.nbteditor", "$groupS.libs.nbteditor")
     }
     build {
         dependsOn("buildPlugin")
@@ -101,7 +86,6 @@ tasks {
                 "author" to author,
                 "kotlinVersion" to getProperties("kotlinVersion"),
                 "exposedVersion" to getProperties("exposedVersion"),
-                "nbtEditorVersion" to getProperties("nbtEditorVersion")
             )
         }
     }
@@ -143,7 +127,7 @@ tasks.register<proguard.gradle.ProGuardTask>("buildPlugin") {
     //class规则
     if (isObfuscated) keep(allowObf, "class $obfuscatedMainClass {}")
     else keep("class $groupS.libs.core.BukkitTemplate {}")
-    keep("class kotlin.Metadata {}")
+    keepkotlinmetadata()
     keep(allowObf, "class * implements $groupS.libs.core.BukkitPlugin {*;}")
     keepclassmembers("class * extends $groupS.libs.core.config.SimpleYAMLConfig {*;}")
     keepclassmembers("class * implements $groupS.libs.core.ui.container.BaseUI {*;}")

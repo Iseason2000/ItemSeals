@@ -1,7 +1,8 @@
 package top.iseason.bukkit.itemseals
 
 import cc.bukkitPlugin.banitem.api.invGettor.CCInventory
-import io.github.bananapuncher714.nbteditor.NBTEditor
+import de.tr7zw.nbtapi.NBT
+
 import org.bstats.bukkit.Metrics
 import org.bukkit.block.BlockState
 import org.bukkit.enchantments.Enchantment
@@ -112,12 +113,13 @@ object ItemSeals : BukkitPlugin {
                 itemMeta.addEnchant(Enchantment.DURABILITY, 1, true)
             }
         }.toColorPapi(player)
-
-        var set = NBTEditor.set(itemStack, base64, Config.seal_item_nbt)
-        set = NBTEditor.set(set, UUID.randomUUID().toString(), "item_seals_unique_id")
-        if (setting != null)
-            set = NBTEditor.set(set, setting, "item_seals_setting")
-        return set to 1
+        NBT.modify(itemStack) {
+            it.setString(Config.seal_item_nbt, base64)
+            it.setString("item_seals_unique_id", UUID.randomUUID().toString())
+            if (setting != null)
+                it.setString("item_seals_setting", setting)
+        }
+        return itemStack to 1
     }
 
     /**
@@ -126,7 +128,9 @@ object ItemSeals : BukkitPlugin {
      * @return 被解封之后的物品，null 不解封
      */
     fun unSealItem(item: ItemStack): Pair<ItemStack, Int>? {
-        val base64 = NBTEditor.getString(item, Config.seal_item_nbt)
+        val base64 = NBT.get<String>(item) {
+            it.getString(Config.seal_item_nbt)
+        }
         if (base64 == null) {
             if (!Config.check_container_item) return null
             try {
@@ -199,7 +203,7 @@ object ItemSeals : BukkitPlugin {
             if (checkWorldSeal) scount += itm.second else ucount += itm.second
             val im = itm.first
 //            if (inv.getItem(i) === item) // 校验
-                inv.setItem(i, im)
+            inv.setItem(i, im)
         }
         return scount to ucount
     }
@@ -290,5 +294,5 @@ object ItemSeals : BukkitPlugin {
         }
     }
 
-    fun isSealedItem(item: ItemStack) = NBTEditor.contains(item, Config.seal_item_nbt)
+    fun isSealedItem(item: ItemStack) = NBT.get<Boolean>(item) { it.hasTag(Config.seal_item_nbt) }
 }

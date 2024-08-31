@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm")
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
 }
 
 subprojects {
@@ -11,7 +11,6 @@ subprojects {
         plugin<JavaLibraryPlugin>()
     }
     repositories {
-        mavenCentral()
         maven {
             name = "aliyun"
             url = uri("https://maven.aliyun.com/repository/public")
@@ -21,6 +20,7 @@ subprojects {
             url = uri("https://maven.aliyun.com/repository/google")
         }
 //        google()
+        mavenCentral()
         maven {
             name = "spigot"
             url = uri("https://hub.spigotmc.org/nexus/content/repositories/public/")
@@ -43,29 +43,22 @@ subprojects {
         }
         mavenLocal()
     }
+
     dependencies {
         val kotlinVersion: String by rootProject
         val exposedVersion: String by rootProject
-        val nbtEditorVersion: String by rootProject
-
+        compileOnly("de.tr7zw:item-nbt-api-plugin:2.13.2")
         compileOnly(platform("org.jetbrains.kotlin:kotlin-bom:$kotlinVersion"))
         //基础库
         compileOnly(kotlin("stdlib"))
         compileOnly("org.spigotmc", "spigot-api", "1.20.3-R0.1-SNAPSHOT", "compile")
-        compileOnly(
-            "io.papermc.paper", "paper-api", "1.20.3-R0.1-SNAPSHOT", "compile"
-        ) {
-            isTransitive = false
-            exclude("org.bukkit")
-        }
         compileOnly("me.clip:placeholderapi:2.11.3")
-        implementation("io.github.bananapuncher714:nbteditor:$nbtEditorVersion")
 
         // 数据库
-        compileOnly("org.jetbrains.exposed", "exposed-core", exposedVersion)
-        compileOnly("org.jetbrains.exposed", "exposed-dao", exposedVersion)
-        compileOnly("org.jetbrains.exposed", "exposed-jdbc", exposedVersion)
-        compileOnly("org.jetbrains.exposed", "exposed-java-time", exposedVersion)
+        compileOnly("org.jetbrains.exposed", "exposed-core", exposedVersion, "compile")
+        compileOnly("org.jetbrains.exposed", "exposed-dao", exposedVersion, "compile")
+        compileOnly("org.jetbrains.exposed", "exposed-jdbc", exposedVersion, "compile")
+        compileOnly("org.jetbrains.exposed", "exposed-java-time", exposedVersion, "compile")
 
         compileOnly("com.zaxxer:HikariCP:4.0.3")
     }

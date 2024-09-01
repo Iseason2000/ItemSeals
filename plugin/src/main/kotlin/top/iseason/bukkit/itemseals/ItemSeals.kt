@@ -131,7 +131,7 @@ object ItemSeals : BukkitPlugin {
         val base64 = NBT.get<String>(item) {
             it.getString(Config.seal_item_nbt)
         }
-        if (base64 == null) {
+        if (base64 == "") {
             if (!Config.check_container_item) return null
             try {
                 val itemMeta = item.itemMeta as? BlockStateMeta ?: return null

@@ -181,7 +181,7 @@ object Config : SimpleYAMLConfig() {
         try {
             val key = cache.get(itemStack) {
                 val sealSetting = NBT.get<String>(itemStack) { it.getString("item_seals_setting") }
-                if (sealSetting != "") return@get sealSetting
+                if (!sealSetting.isNullOrEmpty()) return@get sealSetting
                 matchers.entries.find { m ->
                     if (m.value.isEmpty()) return@find false
                     m.value.all {

@@ -335,7 +335,7 @@ object ItemUtils {
 
             }
             // 1.14 以上
-            if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)) {
+            if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)) {
                 if (hasAttributeModifiers()) {
                     val mutableMapOf = mutableMapOf<String, Any>()
                     attributeModifiers!!.forEach { t, u ->
@@ -375,7 +375,7 @@ object ItemUtils {
                 }
             }
         }
-        if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_16_R1) && this is CompassMeta) {
+        if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_16_R1) && this is CompassMeta) {
             val subSection: ConfigurationSection = yaml.createSection("lodestone")
             subSection["tracked"] = isLodestoneTracked
             if (hasLodestone()) {
@@ -383,7 +383,7 @@ object ItemUtils {
                 subSection["location"] = location!!.toLocationString()
             }
         }
-        if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_17_R1) && this is AxolotlBucketMeta) {
+        if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_17_R1) && this is AxolotlBucketMeta) {
             if (hasVariant()) yaml["variant"] = variant.toString()
         }
 
@@ -429,7 +429,7 @@ object ItemUtils {
                 is LeatherArmorMeta -> section.getString("color")?.also { setColor(fromColorStr(it)) }
                 // 药水
                 is PotionMeta -> {
-                    if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_19_R1)) {
+                    if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_19_R1)) {
                         section.getString("base-effect")?.also {
                             val split = it.trim().split(',')
                             val type =
@@ -508,7 +508,7 @@ object ItemUtils {
                         book.getString("author")?.also { author = it.toColor() }
                         pages = book.getStringList("pages").toColor()
                     }
-                    if (book != null && !MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_19_R1)
+                    if (book != null && MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_19_R1)
                     ) {
                         book.getString("generation")?.also {
                             generation = kotlin.runCatching { BookMeta.Generation.valueOf(it.uppercase()) }.getOrNull()
@@ -519,12 +519,12 @@ object ItemUtils {
                 is MapMeta -> {
                     val mapSection = section.getConfigurationSection("map")
                     isScaling = mapSection?.getBoolean("scaling") ?: false
-                    if (mapSection != null && !MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_11_R1)
+                    if (mapSection != null && MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_11_R1)
                     ) {
                         mapSection.getString("location")?.also { locationName = it.toColor() }
                         mapSection.getString("color")?.also { color = fromColorStr(it) }
                     }
-                    if (mapSection != null && !MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)
+                    if (mapSection != null && MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)
                     ) {
                         mapSection.getConfigurationSection("view")?.also {
                             runCatching {
@@ -542,7 +542,7 @@ object ItemUtils {
                 }
             }
             if (!MinecraftVersion.isNewerThan(MinecraftVersion.MC1_13_R1)) {
-                if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_11_R1)) {
+                if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_11_R1)) {
                     if (this is SpawnEggMeta) {
                         val creatureName = section.getString("creature")
                         if (creatureName != null) {
@@ -566,7 +566,7 @@ object ItemUtils {
                     }
                 }
             }
-            if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)) {
+            if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)) {
                 val section2 = section.getConfigurationSection("attributes")
                 section2?.getKeys(false)?.forEach { name ->
                     val section3 = section2.getConfigurationSection(name)!!
@@ -587,7 +587,7 @@ object ItemUtils {
                     addAttributeModifier(attribute, AttributeModifier(uuid, name, amount, operation, slot))
                 }
             }
-            if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)) {
+            if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_14_R1)) {
                 val modelData = section.getInt("custom-model-data")
                 if (modelData != 0) setCustomModelData(modelData)
                 if (this is CrossbowMeta) {
@@ -614,7 +614,7 @@ object ItemUtils {
                     setPattern(pattern)
                 }
             }
-            if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_15_R1) && this is SuspiciousStewMeta
+            if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_15_R1) && this is SuspiciousStewMeta
             ) {
                 for (effects in section.getStringList("effects")) {
                     val fromEffectString = fromEffectString(effects)
@@ -622,7 +622,7 @@ object ItemUtils {
                         addCustomEffect(fromEffectString, true)
                 }
             }
-            if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_16_R1) && this is CompassMeta
+            if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_16_R1) && this is CompassMeta
             ) {
 
                 val lodestoneSection = section.getConfigurationSection("lodestone")
@@ -632,7 +632,7 @@ object ItemUtils {
                 }
 
             }
-            if (!MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_17_R1) && this is AxolotlBucketMeta
+            if (MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_17_R1) && this is AxolotlBucketMeta
             ) {
                 val variantStr = section.getString("variant")
                 if (variantStr != null) {

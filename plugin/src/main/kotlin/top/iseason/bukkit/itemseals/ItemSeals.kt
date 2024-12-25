@@ -43,9 +43,9 @@ import kotlin.math.min
 object ItemSeals : BukkitPlugin {
 
     override fun onEnable() {
+        Config.load(false)
         SimpleYAMLConfig.notifyMessage = "&a配置文件 &7%s &a已重载"
         PWPHook.checkHooked()
-        PWPHook.init()
         SakuraBindHook.checkHooked()
         PlayerDataSQLHook.checkHooked()
         BanItemHook.checkHooked()
@@ -56,7 +56,7 @@ object ItemSeals : BukkitPlugin {
         if (PlayerDataSQLHook.hasHooked) {
             PlayerDataSQLHook.registerListener()
         }
-        Config.load(false)
+
         Lang.load(false)
         Events.load(false)
         commands()

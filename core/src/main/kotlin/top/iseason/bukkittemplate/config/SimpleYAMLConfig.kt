@@ -202,10 +202,6 @@ open class SimpleYAMLConfig(
             val key = iterator.next()
             //获取并设置注释
             var keyName = key.key
-            //识别@键 SakuraBind start
-            val anotherName = if (keyName.endsWith('@')) keyName.substring(0, keyName.length - 1) else "$keyName@"
-            keyName = if (newConfig.contains(anotherName)) anotherName else keyName
-            // SakuraBind end
             val configType = typeMap[key.field]!!
             if (isReadOnly) {
                 val value = newConfig.get(keyName)

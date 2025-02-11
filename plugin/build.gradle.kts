@@ -8,9 +8,32 @@ buildscript {
         classpath("com.guardsquare:proguard-gradle:7.6.1")
     }
 }
+repositories {
+    mavenCentral()
+    maven {
+        name = "MMOItems"
+        url = uri("https://nexus.phoenixdevt.fr/repository/maven-public/")
+    }
+    maven {
+        name = "McMMO"
+        url = uri("https://nexus.neetgames.com/repository/maven-releases/")
+    }
+    maven {
+        name = "jitpack"
+        url = uri("https://www.jitpack.io")
+    }
+    maven {
+        name = "PlaceholderAPI"
+        url = uri("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+    }
+    maven {
+        name = "Oraxen"
+        url = uri("https://repo.oraxen.com/releases")
+    }
+}
 
 dependencies {
-    // 依赖core模块
+// 依赖core模块
     api(project(":core"))
 //    反射库
 //    compileOnly(kotlin("reflect"))
@@ -18,7 +41,7 @@ dependencies {
 //    协程库
 //    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2")
 
-    // 本地依赖放在libs文件夹内
+// 本地依赖放在libs文件夹内
     implementation("org.bstats:bstats-bukkit:3.0.2")
     compileOnly(fileTree("libs") { include("*.jar") })
 }
@@ -26,12 +49,13 @@ dependencies {
 // 插件名称，请在gradle.properties 修改
 val pluginName: String by rootProject
 //包名，请在gradle.properties 修改
-//val group: String by rootProject
 val groupS = project.group as String
 // 作者，请在gradle.properties 修改
 val author: String by rootProject
 // jar包输出路径，请在gradle.properties 修改
 val jarOutputFile: String by rootProject
+//插件版本，请在gradle.properties 修改
+
 val obfuscated: String by rootProject
 val obfuscatedDictionary: String by rootProject
 val obfuscationDictionaryFile: File? = if (obfuscatedDictionary.isEmpty()) null
@@ -43,6 +67,7 @@ val obfuscatedMainClass =
     } else "a"
 val isObfuscated = obfuscated == "true"
 val shrink: String by rootProject
+//val defaultFile = File("../build", "${rootProject.name}-${rootProject.version}.jar")
 val formatJarOutput = jarOutputFile.replace("\${root}", rootProject.projectDir.absolutePath)
 val output: File =
     if (isObfuscated)
@@ -86,6 +111,7 @@ tasks {
                 "author" to author,
                 "kotlinVersion" to getProperties("kotlinVersion"),
                 "exposedVersion" to getProperties("exposedVersion"),
+                "nbtEditorVersion" to getProperties("nbtEditorVersion")
             )
         }
     }
@@ -129,6 +155,15 @@ tasks.register<proguard.gradle.ProGuardTask>("buildPlugin") {
     else keep("class $groupS.libs.core.BukkitTemplate {}")
     keepkotlinmetadata()
     keep(allowObf, "class * implements $groupS.libs.core.BukkitPlugin {*;}")
+    keep("class top.iseason.bukkit.sakurabind.SakuraBindAPI {*;}")
+    keepclassmembers(
+        allowObf, """class * implements java.io.Serializable{
+        |static final long serialVersionUID;
+        |private void writeObject(java.io.ObjectOutputStream);
+        |private void readObject(java.io.ObjectInputStream);
+        |}
+    """.trimMargin()
+    )
     keepclassmembers("class * extends $groupS.libs.core.config.SimpleYAMLConfig {*;}")
     keepclassmembers("class * implements $groupS.libs.core.ui.container.BaseUI {*;}")
     keepclassmembers(allowObf, "class * implements org.bukkit.event.Listener {*;}")

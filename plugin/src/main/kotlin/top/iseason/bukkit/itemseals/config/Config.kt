@@ -18,6 +18,7 @@ import top.iseason.bukkittemplate.debug.info
 import top.iseason.bukkittemplate.debug.warn
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.applyMeta
+import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.checkAir
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.item
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.toSection
 import java.util.concurrent.TimeUnit
@@ -178,6 +179,9 @@ object Config : SimpleYAMLConfig() {
     private const val NOT_MATCH = "z6R08ED6hvMeEnTQUvnYxQO5FQI81ucd6HA7xAj6B1yX8c7yQjRyok2xWKSlJLL1"
 
     fun getSetting(itemStack: ItemStack): String? {
+        if (itemStack.checkAir()) {
+            return null
+        }
         try {
             val key = cache.get(itemStack) {
                 val sealSetting = NBT.get<String>(itemStack) { it.getString("item_seals_setting") }

@@ -164,7 +164,7 @@ object ItemSeals : BukkitPlugin {
             val itm = sealItem(item!!, player, force) ?: continue
             count += itm.second
             val im = itm.first
-            debug("sealed item in ${inv.javaClass} for ${item.type}")
+            debug { "sealed item in ${inv.javaClass} for ${item.type}" }
             inv.setItem(i, im)
         }
         return count
@@ -196,9 +196,13 @@ object ItemSeals : BukkitPlugin {
                 continue
             }
             val checkWorldSeal = checkWorldSeal(player, item!!) ?: continue
-            if (checkWorldSeal && isSealedItem(item)) continue
-            debug("物品：${item.type} 检查是否封印: $checkWorldSeal")
-            val itm = if (checkWorldSeal) sealItem(item, player) else unSealItem(item)
+            val sealedItem = isSealedItem(item)
+            debug { "物品：${item.type} 检查是否封印: $checkWorldSeal 是否已经封印$sealedItem" }
+            if (checkWorldSeal && sealedItem) continue
+            if (!checkWorldSeal && !sealedItem) continue
+            val itm = if (checkWorldSeal) {
+                sealItem(item, player)
+            } else unSealItem(item)
             itm ?: continue
             if (checkWorldSeal) scount += itm.second else ucount += itm.second
             val im = itm.first
@@ -286,13 +290,13 @@ object ItemSeals : BukkitPlugin {
         }
         if (scount > 0) {
             player.sendColorMessage(Lang.seal_msg)
-            debug("已为玩家 ${player.name} 封印 $scount 个物品")
+            debug { "已为玩家 ${player.name} 封印 $scount 个物品" }
         }
         if (ucount > 0) {
             player.sendColorMessage(Lang.un_seal_msg)
-            debug("已为玩家 ${player.name} 解封 $ucount 物品")
+            debug { "已为玩家 ${player.name} 解封 $ucount 物品" }
         }
     }
 
-    fun isSealedItem(item: ItemStack) = NBT.get<Boolean>(item) { it.hasTag(Config.seal_item_nbt) }
+    fun isSealedItem(item: ItemStack): Boolean = NBT.get<Boolean>(item) { it.hasTag(Config.seal_item_nbt) }
 }

@@ -37,8 +37,8 @@ object PWPHook : BaseHook("PlayerWorldsPro") {
         null
     }
 
-    fun isMember(player: Player, worldOwner: String): Boolean =
-        isMemberMethod?.invoke(player, worldOwner) as? Boolean == true
+    fun isMember(player: Player, worldOwner: String): Boolean? =
+        isMemberMethod?.invoke(player, worldOwner) as? Boolean
 
     /**
      * @return true 需要封印 false 需要解封 null不操作
@@ -48,8 +48,8 @@ object PWPHook : BaseHook("PlayerWorldsPro") {
         if (!Config.hooks__player_worlds_pro) return null
         val name = player.world.name
         val worldOwner = getOwner(name) ?: return null
-
-        return !isMember(player, worldOwner)
+        val member = isMember(player, worldOwner) ?: return null
+        return !member
     }
 
     fun checkPlayerWorld(player: Player, item: ItemStack): Boolean? {
@@ -57,7 +57,8 @@ object PWPHook : BaseHook("PlayerWorldsPro") {
         if (!Config.getConfigOr(item, "hooks.player-worlds-pro") { Config.hooks__player_worlds_pro }) return null
         val name = player.world.name
         val worldOwner = getOwner(name) ?: return null
-        return !isMember(player, worldOwner)
+        val member = isMember(player, worldOwner) ?: return null
+        return !member
     }
 
 }

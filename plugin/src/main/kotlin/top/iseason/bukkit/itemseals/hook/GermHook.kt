@@ -3,7 +3,9 @@ package top.iseason.bukkit.itemseals.hook
 import com.germ.germplugin.api.GermSlotAPI
 import org.bukkit.entity.Player
 import top.iseason.bukkit.itemseals.ItemSeals
+import top.iseason.bukkit.itemseals.ItemSeals.isSealedItem
 import top.iseason.bukkit.itemseals.config.Config
+import top.iseason.bukkittemplate.debug.debug
 import top.iseason.bukkittemplate.hook.BaseHook
 import top.iseason.bukkittemplate.utils.bukkit.ItemUtils.checkAir
 
@@ -21,6 +23,10 @@ object GermHook : BaseHook("GermPlugin") {
                 continue
             }
             val checkWorldSeal = force ?: ItemSeals.checkWorldSeal(player, itemStack) ?: continue
+            val sealedItem = isSealedItem(itemStack)
+            debug { "物品：${itemStack.type} 检查是否封印: $checkWorldSeal 是否已经封印$sealedItem" }
+            if (checkWorldSeal && sealedItem) continue
+            if (!checkWorldSeal && !sealedItem) continue
             val (itm, sc) = if (checkWorldSeal) {
                 ItemSeals.sealItem(itemStack, player) ?: continue
             } else {

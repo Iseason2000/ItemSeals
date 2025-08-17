@@ -39,5 +39,6 @@ runtime-libraries:
     - org.slf4j:slf4j-api
   # skipped libraries
   excludes:
+    - org.jetbrains.kotlin:kotlin-stdlib-common
 #    - io.netty:netty-handler
 

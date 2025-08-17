@@ -5,7 +5,7 @@ plugins {
 
 buildscript {
     dependencies {
-        classpath("com.guardsquare:proguard-gradle:7.6.1")
+        classpath("com.guardsquare:proguard-gradle:7.7.0")
     }
 }
 repositories {

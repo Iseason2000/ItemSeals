@@ -126,7 +126,7 @@ object Config : SimpleYAMLConfig() {
         "itemseals.[matcher].seal 封印特定matcher的物品",
         "itemseals.[matcher].unseal 解封特定matcher的物品",
     )
-    var permission_check = true
+    var permission_check = false
 
     @Key
     @Comment(
@@ -147,7 +147,10 @@ object Config : SimpleYAMLConfig() {
         "example 是一个例子，example作为该匹配器的组名，可用于权限控制",
         "在匹配器里可以覆盖全局设置, 不支持的键如下",
         "async-check-on-world-change、login-check-delay、seal-item-nbt",
-        "hooks.germ、hooks.sakura_bind、hooks.sakura-bind、hooks.player-data-sql、check-container-item"
+        "hooks.germ、hooks.sakura_bind、hooks.sakura-bind、hooks.player-data-sql、check-container-item", "", "",
+        "player-slots 是与 match 平级的选项，可以对玩家某个格子进行封禁与世界黑名单为或的关系, ",
+        "            值为 [格子序号1,格子序号2,..] 例如 副手 [40] 可在这查 https://mcutils.com/inventory-slots",
+        "            注意: events.yml 中的 on-inventory-click 不会检查这个"
     )
     var item_matchers: MemorySection = YamlConfiguration().apply {
         createSection("example").apply {
@@ -158,6 +161,7 @@ object Config : SimpleYAMLConfig() {
             set("match.ids", listOf("6578", "2233:2"))
             set("match.lore", listOf("绑定物品", "属于"))
             set("match.nbt.tag.testnbt", ".*")
+            set("player-slots", emptyList<Int>())
             set("sealed-item", ItemStack(Material.PAPER).toSection())
         }
     }
@@ -169,7 +173,8 @@ object Config : SimpleYAMLConfig() {
         private set
     var matcherSections = LinkedHashMap<String, ConfigurationSection>()
         private set
-
+    var matcherPLayerSlots = LinkedHashMap<String, Set<Int>>()
+        private set
     private val cache = CacheBuilder
         .newBuilder()
         .expireAfterWrite(10, TimeUnit.SECONDS)
@@ -227,6 +232,14 @@ object Config : SimpleYAMLConfig() {
         return section.get(key) as T
     }
 
+    fun <T> getConfigOr(setting: String?, key: String, default: () -> T): T {
+        if (setting == null) return default()
+        val section = matcherSections[setting] ?: return default()
+        if (!section.contains(key)) {
+            return default()
+        }
+        return section.get(key) as T
+    }
 
     override fun onLoaded(section: ConfigurationSection) {
         val fromSection = ItemUtils.fromSection(sealed_item)
@@ -241,6 +254,7 @@ object Config : SimpleYAMLConfig() {
         matcherWorldsWhite.clear()
         matcherSections.clear()
         matchers.clear()
+        matcherPLayerSlots.clear()
         cache.cleanUp()
         item_matchers.getKeys(false).forEach {
             try {
@@ -253,8 +267,10 @@ object Config : SimpleYAMLConfig() {
                 val white = item_matchers.getStringList("${it}.white-list")
                 if (white.isNotEmpty()) matcherWorldsWhite[it] = white.toHashSet()
                 val itemSection = item_matchers.getConfigurationSection("${it}.sealed-item")
+                val playerSlots = item_matchers.getIntegerList("${it}.player-slots")
+                if (playerSlots.isNotEmpty()) matcherPLayerSlots[it] = playerSlots.toHashSet()
                 if (itemSection != null) matcherItems[it] = ItemUtils.fromSection(itemSection) ?: return
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 warn("匹配器配置错误：$it")
             }
         }

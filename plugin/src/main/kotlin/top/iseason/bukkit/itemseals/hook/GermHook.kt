@@ -22,7 +22,7 @@ object GermHook : BaseHook("GermPlugin") {
             if (!Config.getConfigOr(itemStack, "hooks.germ") { Config.hooks__germ }) {
                 continue
             }
-            val checkWorldSeal = force ?: ItemSeals.checkWorldSeal(player, itemStack) ?: continue
+            val checkWorldSeal = force ?: ItemSeals.checkWorldSeal(player, itemStack, null) ?: continue
             val sealedItem = isSealedItem(itemStack)
             debug { "物品：${itemStack.type} 检查是否封印: $checkWorldSeal 是否已经封印$sealedItem" }
             if (checkWorldSeal && sealedItem) continue

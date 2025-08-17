@@ -53,7 +53,7 @@ object Listener : org.bukkit.event.Listener {
         if (item.checkAir()) return
         val clickCache = ClickCache(whoClicked, item!!)
         val isPass = cache.get(clickCache) {
-            val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked, item) ?: return@get false
+            val checkWorldSeal = ItemSeals.checkWorldSeal(whoClicked, item, null) ?: return@get false
             if (checkWorldSeal) {
                 if (ItemSeals.isSealedItem(item)) return@get false
                 val (sealItem, _) = ItemSeals.sealItem(item, whoClicked) ?: return@get false
@@ -70,7 +70,10 @@ object Listener : org.bukkit.event.Listener {
                 return@get true
             }
         }
-        if (isPass) cache.invalidate(clickCache)
+        if (isPass) {
+            cache.invalidate(clickCache)
+            cache.put(ClickCache(whoClicked, event.currentItem!!), true)
+        }
     }
 
     private class ClickCache(val player: Player, val itemStack: ItemStack) {

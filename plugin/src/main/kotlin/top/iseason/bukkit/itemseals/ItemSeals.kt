@@ -2,7 +2,6 @@ package top.iseason.bukkit.itemseals
 
 import cc.bukkitPlugin.banitem.api.invGettor.CCInventory
 import de.tr7zw.nbtapi.NBT
-
 import org.bstats.bukkit.Metrics
 import org.bukkit.block.BlockState
 import org.bukkit.enchantments.Enchantment
@@ -14,6 +13,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.BlockStateMeta
 import top.iseason.bukkit.itemseals.command.commands
 import top.iseason.bukkit.itemseals.config.Config
+import top.iseason.bukkit.itemseals.config.Config.matcherPLayerSlots
 import top.iseason.bukkit.itemseals.config.Events
 import top.iseason.bukkit.itemseals.config.Lang
 import top.iseason.bukkit.itemseals.hook.*
@@ -50,9 +50,9 @@ object ItemSeals : BukkitPlugin {
         PlayerDataSQLHook.checkHooked()
         BanItemHook.checkHooked()
         GermHook.checkHooked()
-        ItemsAdderHook
-        OraxenHook
-        MMOItemsHook
+        ItemsAdderHook.checkHooked()
+        OraxenHook.checkHooked()
+        MMOItemsHook.checkHooked()
         if (PlayerDataSQLHook.hasHooked) {
             PlayerDataSQLHook.registerListener()
         }
@@ -101,14 +101,14 @@ object ItemSeals : BukkitPlugin {
             val name = item.getDisplayName() ?: item.type.name
             if (hasDisplayName())
                 setDisplayName(displayName.formatBy(name))
-            val loreIndex = Config.getConfigOr(item, "seal-lore-index") { Config.seal_lore_index }
+            val loreIndex = Config.getConfigOr(setting, "seal-lore-index") { Config.seal_lore_index }
             if (itemMeta.hasLore() && loreIndex >= 0) {
                 val lore = itemMeta.lore!!
                 if (this.hasLore())
                     lore.addAll(min(loreIndex, lore.size - 1), this.lore!!.map { it.formatBy(name) })
                 this.lore = lore
             }
-            if (Config.getConfigOr(item, "highlight-sealed-item") { Config.highlight_sealed_item }) {
+            if (Config.getConfigOr(setting, "highlight-sealed-item") { Config.highlight_sealed_item }) {
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS)
                 itemMeta.addEnchant(Enchantment.DURABILITY, 1, true)
             }
@@ -187,7 +187,7 @@ object ItemSeals : BukkitPlugin {
         return count
     }
 
-    fun checkInv(inv: Inventory, player: Player): Pair<Int, Int> {
+    fun checkInv(inv: Inventory, player: Player, isPlayerInv: Boolean = false): Pair<Int, Int> {
         var scount = 0
         var ucount = 0
         for (i in 0 until inv.size) {
@@ -195,7 +195,7 @@ object ItemSeals : BukkitPlugin {
             if (item.checkAir()) {
                 continue
             }
-            val checkWorldSeal = checkWorldSeal(player, item!!) ?: continue
+            val checkWorldSeal = checkWorldSeal(player, item!!, if (isPlayerInv) i else null) ?: continue
             val sealedItem = isSealedItem(item)
             debug { "物品：${item.type} 检查是否封印: $checkWorldSeal 是否已经封印$sealedItem" }
             if (checkWorldSeal && sealedItem) continue
@@ -212,25 +212,12 @@ object ItemSeals : BukkitPlugin {
         return scount to ucount
     }
 
-    /**
-     * @return true 需要封印 false 需要解封 null不操作
-     */
-    fun checkWorldSeal(player: Player): Boolean? {
-        if (Config.permission_check) {
-            if (player.hasPermission("itemseals.bypass")) return null
-            if (player.hasPermission("itemseals.seal")) return true
-            if (player.hasPermission("itemseals.unseal")) return false
-        }
-        val pwp = PWPHook.checkPlayerWorld(player)
-        if (pwp != null) return pwp
-        val name = player.world.name
-        if (Config.black_list.contains(name)) return true
-        if (Config.white_list.contains("all")) return false
-        if (Config.white_list.contains(name)) return false
-        return null
-    }
-
-    fun checkWorldSeal(player: Player, item: ItemStack): Boolean? {
+    /*
+    * 检测物品是否需要封印/解封
+    * return null 忽略 true 封印 false 解封
+    * */
+    @JvmStatic
+    fun checkWorldSeal(player: Player, item: ItemStack, invIndex: Int?): Boolean? {
         val setting = Config.getSetting(item)
         if (Config.permission_check) {
             if (player.hasPermission("itemseals.bypass")) return null
@@ -242,29 +229,38 @@ object ItemSeals : BukkitPlugin {
                 if (player.hasPermission("itemseals.$setting.unseal")) return false
             }
         }
-        val pwp = PWPHook.checkPlayerWorld(player, item)
-        if (pwp != null) return pwp
+        val slots = if (invIndex != null) matcherPLayerSlots[setting]
+        else null
+        val pwp by lazy { PWPHook.checkPlayerWorld(player, item) }
         val name = player.world.name
-        val reverse = Config.getConfigOr(item, "reverse-order") { Config.reverse_order }
-        val pattern = Config.getConfigOr(item, "enable-world-name-pattern") { Config.enable_world_name_pattern }
-        val black = Config.matcherWorldsBlack.getOrDefault(setting, Config.black_list)
-        val white = Config.matcherWorldsWhite.getOrDefault(setting, Config.white_list)
-        val first = if (reverse) white else black
-        val second = if (reverse) black else white
-        if (pattern) {
-            if (first.any { Pattern.compile(it).matcher(name).find() }) {
-                return !reverse
+        val reverse = Config.getConfigOr(setting, "reverse-order") { Config.reverse_order }
+        val isPattern = Config.getConfigOr(setting, "enable-world-name-pattern") { Config.enable_world_name_pattern }
+
+        fun isBlack(): Boolean {
+            if (pwp != null && pwp == true) return true
+            if (slots != null && slots.contains(invIndex)) {
+                return true
             }
-            if (second.any { Pattern.compile(it).matcher(name).find() }) {
-                return reverse
+            val black = Config.matcherWorldsBlack.getOrDefault(setting, Config.black_list)
+            return if (isPattern) black.any { Pattern.compile(it).matcher(name).find() }
+            else black.contains(name) || black.contains("all")
+        }
+
+        fun isWhite(): Boolean {
+            if (pwp != null && pwp == false) return true
+            if (slots != null && !slots.contains(invIndex)) {
+                return true
             }
-            return null
+            val white = Config.matcherWorldsWhite.getOrDefault(setting, Config.white_list)
+            return if (isPattern) white.any { Pattern.compile(it).matcher(name).find() }
+            else white.contains(name) || white.contains("all")
         }
-        if (first.contains(name) || first.contains("all")) {
-            return !reverse
-        }
-        if (second.contains(name) || second.contains("all")) {
-            return reverse
+        if (reverse) {
+            if (isWhite()) return false
+            if (isBlack()) return true
+        } else {
+            if (isBlack()) return true
+            if (isWhite()) return false
         }
         return null
     }
@@ -274,7 +270,7 @@ object ItemSeals : BukkitPlugin {
      */
     fun checkPlayerBags(player: Player) {
         val inventory = player.inventory
-        var (scount, ucount) = checkInv(inventory, player)
+        var (scount, ucount) = checkInv(inventory, player, true)
         if (BanItemHook.hasHooked) {
             BanItemHook.getModInventories(player).forEach {
                 val (s, u) = checkInv(it, player)
